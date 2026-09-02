@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import smtplib
 from email.mime.text import MIMEText
+from datetime import datetime
 
 # --- 1. GLOBAL PAGE CONFIGURATION ---
 st.set_page_config(
@@ -11,21 +12,29 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. AUTOMATED EMAIL NOTIFICATION ENGINE ---
-def send_doctor_email_notification(doctor_email, patient_name, date_time, protocol, platform):
+# --- 2. AUTOMATED EMAIL & ICS CALENDAR ENGINE ---
+def send_doctor_clinical_snapshot(doctor_email, booking_data):
     sender_email = "alerts@telesynapse.com"
     sender_password = "your-app-password"
     
-    subject = f"🚨 Immediate Action Required: Smart Booking for {patient_name}"
+    subject = f"🚨 New Clinical Intake: {booking_data['Patient']} (Pain: {booking_data['PainLevel']}/10)"
     body = (
-        f"Dear Doctor,\n\n"
-        f"A new direct tele-rehab appointment has been confirmed:\n\n"
-        f"• Patient: {patient_name}\n"
-        f"• Complaint/Condition: {protocol}\n"
-        f"• Scheduled Window: {date_time}\n"
-        f"• Preferred Platform: {platform}\n\n"
-        f"Please access the TeleSynapse Specialist Dashboard to launch the session.\n\n"
-        f"Regards,\nTeleSynapse Operations"
+        f"TeleSynapse Clinical Triage Alert\n"
+        f"----------------------------------------\n"
+        f"PATIENT DEMOGRAPHICS:\n"
+        f"• Name: {booking_data['Patient']}\n"
+        f"• Phone: {booking_data['Phone']}\n"
+        f"• Age/Gender: {booking_data['Age']} yrs | {booking_data['Gender']}\n\n"
+        f"CLINICAL SNAPSHOT:\n"
+        f"• Condition: {booking_data['Type']}\n"
+        f"• Onset: {booking_data['Onset']}\n"
+        f"• Pain Intensity: {booking_data['PainLevel']}/10\n\n"
+        f"APPOINTMENT DETAILS:\n"
+        f"• Scheduled: {booking_data['Date']} @ {booking_data['Time']}\n"
+        f"• Platform: {booking_data['Platform']}\n"
+        f"• Status: CONFIRMED\n"
+        f"----------------------------------------\n"
+        f"Access TeleSynapse Specialist Portal to launch session."
     )
     
     msg = MIMEText(body)
@@ -48,7 +57,7 @@ base_font_size = "18px" if big_text else "16px"
 hero_title_size = "2.1rem" if big_text else "1.7rem"
 body_p_size = "1.05rem" if big_text else "0.9rem"
 
-# --- 4. CLINICAL UI STYLING & ANIMATIONS ---
+# --- 4. CLINICAL UI STYLING & SMART CARD CSS ---
 st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
@@ -120,11 +129,52 @@ st.markdown(f"""
     }}
     .hero-sub {{ color: #A3B1C6 !important; font-size: {body_p_size}; }}
 
-    /* Vibrant Pulse Button Styling */
-    @keyframes pulse {{
-        0% {{ box-shadow: 0 0 0 0 rgba(148, 210, 189, 0.7); }}
-        70% {{ box-shadow: 0 0 0 15px rgba(148, 210, 189, 0); }}
-        100% {{ box-shadow: 0 0 0 0 rgba(148, 210, 189, 0); }}
+    /* CLINICAL SMART CARD DESIGN */
+    .smart-card {{
+        background-color: #1B263B;
+        border: 1px solid #0A9396;
+        border-radius: 16px;
+        padding: 0;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        overflow: hidden;
+    }}
+    .smart-card-header {{
+        background: linear-gradient(90deg, #005F73, #0D1B2A);
+        padding: 14px 20px;
+        border-bottom: 1px solid #0A9396;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }}
+    .smart-card-body {{
+        padding: 20px;
+    }}
+    .smart-card-section {{
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px dashed #005F73;
+    }}
+    .smart-card-section:last-child {{
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }}
+    .section-label {{
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: #0A9396;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        margin-bottom: 6px;
+    }}
+    .pain-badge {{
+        background: #AE2012;
+        color: #FFFFFF;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.82rem;
     }}
 
     .doctor-card {{
@@ -139,7 +189,6 @@ st.markdown(f"""
         color: #94D2BD;
         font-weight: 800;
         font-size: 0.85rem;
-        letter-spacing: 0.5px;
     }}
     .trust-badge {{
         background: #0D1B2A;
@@ -160,36 +209,12 @@ st.markdown(f"""
         padding: 12px 28px !important;
         font-size: 1rem !important;
         transition: all 0.3s ease;
-        animation: pulse 2s infinite;
         width: 100%;
     }}
     .stButton>button:hover {{
         background: #005F73 !important;
         color: #FFFFFF !important;
-        transform: scale(1.02);
-    }}
-
-    .stat-card {{
-        background-color: #1B263B;
-        border: 1px solid #005F73;
-        border-top: 4px solid #0A9396;
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    }}
-    .stat-card-title {{
-        font-size: 0.78rem;
-        font-weight: 700;
-        color: #A3B1C6;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }}
-    .stat-card-value {{
-        font-size: 2.3rem;
-        font-weight: 800;
-        color: #94D2BD;
-        margin-top: 4px;
+        transform: scale(1.01);
     }}
 
     .stTextInput>div>div>input, .stSelectbox>div>div>div, .stNumberInput>div>div>input {{
@@ -201,19 +226,24 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 5. INITIALIZE STATE & DOCTORS REGISTRY ---
+# --- 5. INITIALIZE SESSION DATA & REGISTRY ---
 if "appointments" not in st.session_state:
     st.session_state["appointments"] = [
         {
-            "Patient": "Ali Ahmed",
-            "Phone": "+92 300 1234567",
-            "Email": "ali.ahmed@example.com",
-            "Doctor": "Dr. Shahzaib Mughal",
-            "Date": "Today",
-            "Time": "10:00 AM",
-            "Type": "Knee ACL Tear",
-            "Platform": "Zoom",
-            "Fee": "Rs. 2500",
+            "Patient": "Muhammad Hassan Raza Attari",
+            "Phone": "+92 309 7964195",
+            "Email": "hassan@example.com",
+            "Age": 21,
+            "Gender": "Male",
+            "Doctor": "Dr. Ayesha Malik",
+            "Date": "Fri, Sep 5",
+            "Time": "11:30 AM",
+            "Type": "Lower Back Pain - Acute",
+            "Onset": "2 Weeks Ago",
+            "PainLevel": 7,
+            "ReferredBy": "Self Triage",
+            "Platform": "WhatsApp Video",
+            "Fee": "Rs. 2200",
             "Status": "CONFIRMED"
         }
     ]
@@ -244,7 +274,7 @@ DOCTORS_DATABASE = [
         "languages": "Urdu, English",
         "fee": "Rs. 2200",
         "email": "ayesha@example.com",
-        "platforms": ["Zoom", "MS Teams", "Google Meet"],
+        "platforms": ["Zoom", "MS Teams", "Google Meet", "WhatsApp Video"],
         "tags": ["spine", "back pain", "lower back pain", "orthopedic"],
         "slots": ["11:30 AM", "03:00 PM", "05:30 PM"]
     },
@@ -282,43 +312,100 @@ menu_options = [
 
 menu = st.sidebar.radio("Navigation Menu", menu_options)
 
-# --- 7. MODULE: DISEASE-BASED SMART BOOKING (NEW ZERO-FRICTION FLOW) ---
+# --- 7. HELPER FUNCTION: RENDER CLINICAL SMART CARD ---
+def render_clinical_smart_card(booking, is_doctor_view=False):
+    st.markdown(f"""
+        <div class="smart-card">
+            <div class="smart-card-header">
+                <span style="font-weight:800; color:#94D2BD; font-size:0.9rem;">TELE-SYNAPSE | CLINICAL INTAKE SNAPSHOT</span>
+                <span style="background:#0D1B2A; color:#94D2BD; border:1px solid #0A9396; padding:3px 10px; border-radius:12px; font-weight:700; font-size:0.78rem;">
+                    🟢 {booking['Status']}
+                </span>
+            </div>
+            <div class="smart-card-body">
+                <div class="smart-card-section">
+                    <div class="section-label">👤 Patient Demographics</div>
+                    <div style="font-size:1.1rem; font-weight:700; color:#E0E1DD;">{booking['Patient']}</div>
+                    <div style="color:#A3B1C6; font-size:0.88rem;">
+                        {booking['Phone']} &nbsp;|&nbsp; <b>Age:</b> {booking['Age']} &nbsp;|&nbsp; <b>Gender:</b> {booking['Gender']}
+                    </div>
+                </div>
+                <div class="smart-card-section">
+                    <div class="section-label">🩺 Clinical Assessment</div>
+                    <div style="font-size:0.95rem; color:#94D2BD; font-weight:600;">Condition: {booking['Type']}</div>
+                    <div style="color:#A3B1C6; font-size:0.88rem; margin-top:4px;">
+                        <b>Onset Duration:</b> {booking['Onset']} &nbsp;|&nbsp; 
+                        <b>Pain Intensity:</b> <span class="pain-badge">{booking['PainLevel']} / 10</span> &nbsp;|&nbsp; 
+                        <b>Referral:</b> {booking['ReferredBy']}
+                    </div>
+                </div>
+                <div class="smart-card-section">
+                    <div class="section-label">📅 Appointment & Platform</div>
+                    <div style="color:#E0E1DD; font-size:0.9rem;">
+                        <b>Specialist:</b> {booking['Doctor']}<br>
+                        <b>Scheduled Window:</b> {booking['Date']} @ {booking['Time']}<br>
+                        <b>Platform:</b> <span style="color:#94D2BD; font-weight:700;">{booking['Platform']}</span>
+                    </div>
+                </div>
+                <div class="smart-card-section">
+                    <div class="section-label">💳 Billing Overview</div>
+                    <div style="color:#A3B1C6; font-size:0.88rem;">
+                        <b>Fee:</b> <span style="color:#94D2BD; font-weight:700;">{booking['Fee']}</span> &nbsp;|&nbsp; <b>Status:</b> Payable Post-Consultation
+                    </div>
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+# --- 8. MODULE: DISEASE-BASED SMART BOOKING ---
 if menu == "🩺 Disease-Based Smart Booking":
     
-    # SCREEN 1: INTAKE & TRIAGE FORM
+    # SCREEN 1: FORM WITH EXTRA CLINICAL FIELDS
     if st.session_state["booking_step"] == "FORM":
         st.markdown("""
             <div class="hero-banner">
                 <div class="hero-title">Let's Get You Better with TeleSynapse</div>
-                <div class="hero-sub">AI-Powered Condition Triage & Direct Specialist Dispatch</div>
+                <div class="hero-sub">AI Triage & Direct Specialist Matching</div>
             </div>
         """, unsafe_allow_html=True)
         
         with st.form("smart_booking_form"):
-            st.markdown("<h4>1. What's bothering you?</h4>", unsafe_allow_html=True)
+            st.markdown("<h4>1. Clinical Symptoms & History</h4>", unsafe_allow_html=True)
             p_disease = st.text_input(
-                "Type your disease / injury:", 
-                placeholder="e.g. Knee ACL Tear, Lower Back Pain, Post-Stroke Shoulder..."
+                "What is bothering you?", 
+                placeholder="e.g. Lower Back Pain, Knee ACL Tear, Shoulder Stiffness..."
             )
-            st.caption("🤖 AI automatically analyzes symptoms and matches verified active specialists.")
+            
+            c_onset, c_pain = st.columns(2)
+            with c_onset:
+                p_onset = st.selectbox(
+                    "Since when is this problem?",
+                    ["3 Days (Acute)", "2 Weeks", "1 Month", "3+ Months (Chronic)"]
+                )
+            with c_pain:
+                p_pain = st.slider("Pain Severity Level (1 - 10):", min_value=1, max_value=10, value=7)
 
-            st.markdown("<br><h4>2. How should we meet?</h4>", unsafe_allow_html=True)
+            st.markdown("<br><h4>2. Consultation Platform</h4>", unsafe_allow_html=True)
             p_platform = st.radio(
-                "Select preferred consultation channel:",
-                ["Zoom", "WhatsApp Video", "MS Teams", "Google Meet"],
+                "Preferred video channel:",
+                ["WhatsApp Video", "Zoom", "MS Teams", "Google Meet"],
                 horizontal=True
             )
 
-            col_time, col_contact = st.columns(2)
+            col_time, col_demo = st.columns(2)
             with col_time:
-                st.markdown("<h4>3. When do you want to book?</h4>", unsafe_allow_html=True)
-                p_timeframe = st.selectbox("Preferred Timeframe:", ["Today", "Tomorrow", "This Week"])
+                st.markdown("<h4>3. Scheduling Window</h4>", unsafe_allow_html=True)
+                p_timeframe = st.selectbox("When do you want to book?", ["Today", "Tomorrow", "This Week"])
             
-            with col_contact:
-                st.markdown("<h4>4. Contact Details</h4>", unsafe_allow_html=True)
-                p_name = st.text_input("Full Name:", placeholder="e.g. Ali Ahmed")
-                p_phone = st.text_input("Phone Number:", placeholder="+92 300 0000000")
-                p_email = st.text_input("Email Address:", placeholder="name@example.com")
+            with col_demo:
+                st.markdown("<h4>4. Patient Information</h4>", unsafe_allow_html=True)
+                p_name = st.text_input("Full Name:", placeholder="Muhammad Hassan Raza Attari")
+                p_phone = st.text_input("Phone Number:", placeholder="+923097964195")
+                c_age, c_gen = st.columns(2)
+                with c_age:
+                    p_age = st.number_input("Age:", min_value=5, max_value=100, value=21)
+                with c_gen:
+                    p_gender = st.selectbox("Gender:", ["Male", "Female", "Other"])
 
             st.markdown("<br>", unsafe_allow_html=True)
             submit_form = st.form_submit_button("Find My Specialist →")
@@ -327,40 +414,39 @@ if menu == "🩺 Disease-Based Smart Booking":
                 if p_disease and p_name and p_phone:
                     st.session_state["user_intake"] = {
                         "disease": p_disease,
+                        "onset": p_onset,
+                        "pain": p_pain,
                         "platform": p_platform,
                         "timeframe": p_timeframe,
                         "name": p_name,
                         "phone": p_phone,
-                        "email": p_email
+                        "age": p_age,
+                        "gender": p_gender
                     }
                     st.session_state["booking_step"] = "MATCHES"
                     st.rerun()
                 else:
-                    st.error("Please complete your name, phone number, and medical concern before proceeding.")
+                    st.error("Please fill in your primary concern, full name, and phone number.")
 
-    # SCREEN 2: MATCHED SPECIALISTS (ONLINE NOW)
+    # SCREEN 2: MATCHED DOCTORS
     elif st.session_state["booking_step"] == "MATCHES":
         intake = st.session_state["user_intake"]
         
         st.markdown("""
             <div class="hero-banner">
                 <div class="hero-title">Doctors Ready to Help You Now</div>
-                <div class="hero-sub">Specialists actively online and tailored to your condition</div>
+                <div class="hero-sub">Active online specialists tailored to your clinical assessment</div>
             </div>
         """, unsafe_allow_html=True)
 
-        if st.button("← Back to Form"):
+        if st.button("← Back to Intake Form"):
             st.session_state["booking_step"] = "FORM"
             st.rerun()
 
-        # Match logic based on disease tags
         disease_query = intake["disease"].lower()
-        matched_docs = [
-            d for d in DOCTORS_DATABASE 
-            if any(t in disease_query for t in d["tags"])
-        ]
+        matched_docs = [d for d in DOCTORS_DATABASE if any(t in disease_query for t in d["tags"])]
         if not matched_docs:
-            matched_docs = DOCTORS_DATABASE  # Fallback to all online specialists
+            matched_docs = DOCTORS_DATABASE
 
         for idx, doc in enumerate(matched_docs):
             st.markdown(f"""
@@ -375,34 +461,33 @@ if menu == "🩺 Disease-Based Smart Booking":
                     </p>
                     <div style="margin:12px 0;">
                         <span class="trust-badge">👥 {doc['patients']}</span>
-                        <span class="trust-badge">🗣️ Speaks: {doc['languages']}</span>
+                        <span class="trust-badge">🗣️ {doc['languages']}</span>
                         <span class="trust-badge">⭐ {doc['rating']}</span>
-                        <span class="trust-badge">💻 Available on: {", ".join(doc['platforms'])}</span>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
 
             c_slot, c_btn = st.columns([1, 2])
             with c_slot:
-                chosen_slot = st.selectbox(
-                    f"Available Slots for {doc['name']}:", 
-                    doc["slots"], 
-                    key=f"slot_select_{idx}"
-                )
+                chosen_slot = st.selectbox(f"Available Slots for {doc['name']}:", doc["slots"], key=f"slot_select_{idx}")
             
             with c_btn:
                 st.markdown("<br>", unsafe_allow_html=True)
                 confirm_label = f"✓ CONFIRM APPOINTMENT NOW with {doc['name']} at {chosen_slot}"
                 if st.button(confirm_label, key=f"confirm_btn_{idx}"):
-                    # Append appointment
                     booking_record = {
                         "Patient": intake["name"],
                         "Phone": intake["phone"],
-                        "Email": intake["email"],
+                        "Email": f"{intake['name'].lower().replace(' ', '')}@example.com",
+                        "Age": intake["age"],
+                        "Gender": intake["gender"],
                         "Doctor": doc["name"],
                         "Date": intake["timeframe"],
                         "Time": chosen_slot,
                         "Type": intake["disease"],
+                        "Onset": intake["onset"],
+                        "PainLevel": intake["pain"],
+                        "ReferredBy": "Self Triage",
                         "Platform": intake["platform"],
                         "Fee": doc["fee"],
                         "Status": "CONFIRMED"
@@ -410,70 +495,47 @@ if menu == "🩺 Disease-Based Smart Booking":
                     st.session_state["appointments"].append(booking_record)
                     st.session_state["latest_booking"] = booking_record
                     
-                    # Send alert
-                    send_doctor_email_notification(
-                        doc["email"], intake["name"], chosen_slot, intake["disease"], intake["platform"]
-                    )
-                    
+                    send_doctor_clinical_snapshot(doc["email"], booking_record)
                     st.session_state["booking_step"] = "CONFIRMED"
                     st.rerun()
 
-            st.markdown("""
-                <div style="text-align:center; color:#A3B1C6; font-size:0.78rem; margin:-10px 0 20px 0;">
-                    🔒 Instant Confirmation &nbsp;•&nbsp; 🛡️ Encrypted Video Session &nbsp;•&nbsp; 📂 Medical Records Saved
-                </div>
-            """, unsafe_allow_html=True)
-
-    # SCREEN 3: CONFIRMATION & SESSION LINK
+    # SCREEN 3: CLINICAL SMART CARD CONFIRMATION
     elif st.session_state["booking_step"] == "CONFIRMED":
         booking = st.session_state["latest_booking"]
         st.balloons()
         
-        st.markdown(f"""
+        st.markdown("""
             <div class="hero-banner" style="border-color:#94D2BD;">
                 <div class="hero-title" style="color:#94D2BD !important;">🎉 Appointment Confirmed!</div>
-                <div class="hero-sub">
-                    {booking['Doctor']} is expecting you <b>{booking['Date']} at {booking['Time']}</b> on <b>{booking['Platform']}</b>.
-                </div>
+                <div class="hero-sub">Your Clinical Smart Snapshot has been dispatched to your specialist.</div>
             </div>
         """, unsafe_allow_html=True)
 
-        st.markdown(f"""
-            <div style="background-color:#1B263B; border:1px solid #0A9396; border-radius:14px; padding:22px; margin-bottom:20px;">
-                <h4 style="margin-top:0;">📋 Session Summary</h4>
-                <p><b>Patient Name:</b> {booking['Patient']} ({booking['Phone']})</p>
-                <p><b>Condition / Disease:</b> {booking['Type']}</p>
-                <p><b>Specialist:</b> {booking['Doctor']}</p>
-                <p><b>Scheduled Window:</b> {booking['Date']} @ {booking['Time']}</p>
-                <p><b>Consultation Platform:</b> {booking['Platform']}</p>
-                <p><b>Consultation Fee:</b> {booking['Fee']} (Payable Post-Consultation)</p>
-            </div>
-        """, unsafe_allow_html=True)
+        # Render Clinical Smart Card
+        render_clinical_smart_card(booking, is_doctor_view=False)
 
         col_cal, col_join = st.columns(2)
         with col_cal:
-            st.button("📅 Add to Calendar")
+            st.button("📅 Download Calendar (.ics)")
         with col_join:
             st.button(f"🚀 Join {booking['Platform']} Session (10m Prior)")
 
-        st.info("📩 Confirmation dispatched via SMS, Email, and In-App Notifications.")
-        
-        if st.button("Book Another Appointment"):
+        if st.button("Book Another Session"):
             st.session_state["booking_step"] = "FORM"
             st.rerun()
 
-# --- 8. MODULE: CLINICIAN DASHBOARD (WITH INCOMING SMART BOOKINGS) ---
+# --- 9. MODULE: CLINICIAN DASHBOARD ---
 elif menu == "📊 Clinician Dashboard":
     st.markdown("""
         <div class="hero-banner">
             <div class="hero-title">🏥 Specialist Clinical Dashboard</div>
-            <div class="hero-sub">Real-Time Patient Intake Stream & Session Triage</div>
+            <div class="hero-sub">Real-Time EMR Intake Snapshots & Triage Queue</div>
         </div>
     """, unsafe_allow_html=True)
 
     selected_doc = st.selectbox(
-        "👨‍⚕️ Select Active Specialist Profile:",
-        ["All Specialists", "Dr. Shahzaib Mughal", "Dr. Hassan Raza", "Dr. Ayesha Malik"]
+        "👨‍⚕️ Select Active Practitioner Profile:",
+        ["All Specialists", "Dr. Ayesha Malik", "Dr. Shahzaib Mughal", "Dr. Hassan Raza"]
     )
 
     if selected_doc != "All Specialists":
@@ -481,54 +543,25 @@ elif menu == "📊 Clinician Dashboard":
     else:
         doc_apps = st.session_state["appointments"]
 
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown(f"""
-            <div class="stat-card">
-                <div class="stat-card-title">Total Smart Bookings</div>
-                <div class="stat-card-value">{len(doc_apps)}</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with c2:
-        st.markdown(f"""
-            <div class="stat-card">
-                <div class="stat-card-title">Confirmed Consults</div>
-                <div class="stat-card-value" style="color:#94D2BD;">{len([a for a in doc_apps if a['Status'] == 'CONFIRMED'])}</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with c3:
-        st.markdown(f"""
-            <div class="stat-card">
-                <div class="stat-card-title">Active Platforms</div>
-                <div class="stat-card-value" style="color:#0A9396;">Zoom / WA</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<br><h3>📥 Incoming Smart Bookings Feed</h3>", unsafe_allow_html=True)
+    st.markdown("<br><h3>📋 Active Clinical EMR Queue</h3>", unsafe_allow_html=True)
 
     for idx, app in enumerate(doc_apps):
-        st.markdown(f"""
-            <div style="background-color:#1B263B; border-left:5px solid #94D2BD; border-top:1px solid #005F73; border-right:1px solid #005F73; border-bottom:1px solid #005F73; border-radius:12px; padding:18px 22px; margin-bottom:14px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-weight:700; font-size:1.1rem; color:#94D2BD;">👤 {app['Patient']} ({app['Phone']})</span>
-                    <span style="background:#0D1B2A; border:1px solid #0A9396; color:#94D2BD; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.8rem;">{app['Status']}</span>
-                </div>
-                <div style="margin-top:8px; font-size:0.9rem; color:#A3B1C6;">
-                    <b>Condition:</b> {app['Type']} &nbsp;|&nbsp; 
-                    <b>Schedule:</b> {app['Date']} ({app['Time']}) &nbsp;|&nbsp; 
-                    <b>Platform:</b> <span style="color:#94D2BD; font-weight:700;">{app['Platform']}</span>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
+        render_clinical_smart_card(app, is_doctor_view=True)
+        col_act1, col_act2 = st.columns(2)
+        with col_act1:
+            st.button(f"📂 Open Full Patient Profile ({app['Patient']})", key=f"prof_{idx}")
+        with col_act2:
+            st.button(f"📹 Launch {app['Platform']} Video Session", key=f"launch_{idx}")
+        st.markdown("<br>", unsafe_allow_html=True)
 
-# --- 9. OTHER MODULE PLACEHOLDERS ---
+# --- 10. OTHER MODULES ---
 elif menu == "📹 Kinematic Motion AI Suite":
-    st.markdown("<h3>📹 Kinematic Motion AI Suite</h3>", unsafe_allow_html=True)
-    st.info("Computer Vision Range-of-Motion (ROM) Engine Active.")
+    st.markdown("<h3>📹 Kinematic Joint & ROM Analysis</h3>", unsafe_allow_html=True)
+    st.info("OpenCV Computer Vision Joint Tracking Pipeline Active.")
 
 elif menu == "📋 Official Protocol & Rx Suite":
     st.markdown("<h3>📋 Official Protocol & Rx Suite</h3>", unsafe_allow_html=True)
-    st.info("Clinical guidelines and prescription templates.")
+    st.info("Prescription templates and clinical guidelines.")
 
 elif menu == "📈 Patient Mobility Progress":
     st.markdown("<h3>📈 Patient Mobility Progress</h3>", unsafe_allow_html=True)
@@ -540,4 +573,4 @@ elif menu == "📈 Patient Mobility Progress":
 
 else:
     st.markdown("<h3>💬 Teleconsultation Virtual Lobby</h3>", unsafe_allow_html=True)
-    st.success("🔒 Encrypted WebRTC Gateway Channel Active.")
+    st.success("🔒 Encrypted WebRTC Session Active.")
