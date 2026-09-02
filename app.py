@@ -13,11 +13,11 @@ st.set_page_config(
 
 # --- 2. AUTOMATED EMAIL NOTIFICATION FUNCTION ---
 def send_doctor_email_notification(doctor_email, patient_name, date_time, protocol):
-    sender_email = "alerts@telesynapse.com"       # Replace with your sender email
-    sender_password = "your-app-password"         # Replace with Gmail App Password (16-digit)
+    sender_email = "alerts@telesynapse.com"       # Sender email
+    sender_password = "your-app-password"         # Gmail App Password (16-digit)
     
     subject = f"🚨 New Tele-Rehab Appointment: {patient_name}"
-    body = f"Hello Doctor,\n\nNew patient appointment request received:\n\nPatient: {patient_name}\nProtocol: {protocol}\nTime: {date_time}\n\nPlease log in to TeleSynapse Portal to confirm."
+    body = f"Hello Doctor,\n\nNew patient appointment request received:\n\nPatient: {patient_name}\nProtocol/Condition: {protocol}\nTime Slot: {date_time}\n\nPlease log in to TeleSynapse Portal to confirm."
     
     msg = MIMEText(body)
     msg['Subject'] = subject
@@ -41,13 +41,11 @@ st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-    /* Hide Streamlit Chrome */
     #MainMenu {{ visibility: hidden !important; }}
     footer {{ visibility: hidden !important; }}
     .stDeployButton {{ display: none !important; }}
     header[data-testid="stHeader"] {{ background-color: transparent !important; }}
 
-    /* Global Body Styling */
     html, body, [class*="css"] {{
         font-family: 'Poppins', sans-serif !important;
         font-size: {base_font_size} !important;
@@ -57,11 +55,9 @@ st.markdown(f"""
         color: #E0E1DD !important;
     }}
 
-    /* Typography Accent */
     h1, h2, h3 {{
         color: #94D2BD !important;
         font-weight: 700 !important;
-        letter-spacing: -0.3px;
     }}
     h4, h5, h6 {{
         color: #0A9396 !important;
@@ -72,7 +68,6 @@ st.markdown(f"""
         font-size: {body_p_size};
     }}
 
-    /* Sidebar Styling (#1B263B) */
     [data-testid="stSidebar"] {{
         background-color: #1B263B !important;
         border-right: 1px solid #005F73 !important;
@@ -82,7 +77,6 @@ st.markdown(f"""
         color: #E0E1DD !important;
     }}
 
-    /* Brand Container Logo & Tagline */
     .brand-container {{
         padding: 18px 14px;
         background: linear-gradient(135deg, #005F73 0%, #0D1B2A 100%);
@@ -108,7 +102,6 @@ st.markdown(f"""
         margin-top: 4px;
     }}
 
-    /* Hero Banner */
     .hero-banner {{
         background: linear-gradient(135deg, #1B263B 0%, #005F73 100%);
         border: 1px solid #0A9396;
@@ -129,7 +122,6 @@ st.markdown(f"""
         font-size: {body_p_size};
     }}
 
-    /* Stat Cards */
     .stat-card {{
         background-color: #1B263B;
         border: 1px solid #005F73;
@@ -153,7 +145,25 @@ st.markdown(f"""
         margin-top: 4px;
     }}
 
-    /* Patient Roster Cards */
+    .doctor-card {{
+        background-color: #1B263B;
+        border: 1px solid #0A9396;
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }}
+    .online-badge {{
+        background-color: #94D2BD;
+        color: #0D1B2A;
+        font-size: 0.72rem;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        float: right;
+    }}
+
     .card-confirmed {{
         background-color: #1B263B !important;
         border-left: 5px solid #0A9396 !important;
@@ -175,7 +185,6 @@ st.markdown(f"""
         margin-bottom: 14px;
     }}
 
-    /* Status Badges */
     .badge-confirmed {{
         font-weight: 700;
         font-size: 0.78rem;
@@ -195,7 +204,6 @@ st.markdown(f"""
         border: 1px solid #EE9B00;
     }}
 
-    /* Buttons: Mint Green CTA */
     .stButton>button {{
         background: linear-gradient(90deg, #94D2BD, #0A9396) !important;
         color: #0D1B2A !important;
@@ -212,7 +220,6 @@ st.markdown(f"""
         transform: scale(1.02);
     }}
 
-    /* Input Controls Styling */
     .stTextInput>div>div>input, .stSelectbox>div>div>div, .stNumberInput>div>div>input, .stDateInput>div>div>input {{
         background-color: #0D1B2A !important;
         color: #E0E1DD !important;
@@ -222,13 +229,45 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 5. INITIALIZE SESSION STATE ---
+# --- 5. INITIALIZE SESSION STATE & DOCTORS REGISTRY ---
 if "appointments" not in st.session_state:
     st.session_state["appointments"] = [
-        {"Patient": "Ali Ahmed", "Doctor": "Dr. Shahzaib Mughal", "Date": "2026-09-03", "Time": "10:00 AM", "Type": "Knee ACL Protocol", "Status": "CONFIRMED"},
-        {"Patient": "Sara Khan", "Doctor": "Dr. Hassan Raza", "Date": "2026-09-03", "Time": "11:30 AM", "Type": "Shoulder Abduction Index", "Status": "PENDING"},
-        {"Patient": "Usman Tariq", "Doctor": "Dr. Ayesha Malik", "Date": "2026-09-04", "Time": "02:00 PM", "Type": "Elbow Mobility Protocol", "Status": "CONFIRMED"}
+        {"Patient": "Ali Ahmed", "Doctor": "Dr. Shahzaib Mughal", "Date": "2026-09-03", "Time": "10:00 AM", "Type": "Knee ACL Pain", "Status": "CONFIRMED"},
+        {"Patient": "Sara Khan", "Doctor": "Dr. Hassan Raza", "Date": "2026-09-03", "Time": "11:30 AM", "Type": "Post-Stroke Shoulder", "Status": "PENDING"}
     ]
+
+DOCTORS_DATABASE = [
+    {
+        "name": "Dr. Shahzaib Mughal",
+        "title": "Knee & Sports Rehab Specialist",
+        "exp": "6 Years Exp",
+        "fee": "Rs. 2500",
+        "email": "shahzaib@example.com",
+        "status": "ONLINE NOW",
+        "tags": ["knee acl pain", "sports injury", "knee", "acl", "joint pain"],
+        "slots": ["Today 10:00 AM", "Today 02:30 PM", "Tomorrow 11:00 AM"]
+    },
+    {
+        "name": "Dr. Ayesha Malik",
+        "title": "Orthopedic & Spine Rehab Specialist",
+        "exp": "4 Years Exp",
+        "fee": "Rs. 2200",
+        "email": "ayesha@example.com",
+        "status": "ONLINE NOW",
+        "tags": ["knee acl pain", "spine rehab", "orthopedic", "back pain"],
+        "slots": ["Today 11:30 AM", "Tomorrow 09:00 AM"]
+    },
+    {
+        "name": "Dr. Hassan Raza",
+        "title": "Neurological & Post-Stroke Specialist",
+        "exp": "5 Years Exp",
+        "fee": "Rs. 2800",
+        "email": "hassan@example.com",
+        "status": "ONLINE NOW",
+        "tags": ["post-stroke shoulder", "paralysis", "stroke", "shoulder", "elbow"],
+        "slots": ["Today 04:00 PM", "Tomorrow 02:00 PM"]
+    }
+]
 
 # --- 6. SIDEBAR BRANDING & NAVIGATION ---
 st.sidebar.markdown("""
@@ -242,7 +281,7 @@ st.sidebar.markdown("<p style='font-size:0.75rem; font-weight:700; color:#0A9396
 
 menu_options = [
     "📊 Clinician Dashboard",
-    "📝 Patient Registration & Intake",
+    "🩺 Disease-Based Smart Booking",
     "📹 Kinematic Motion AI Suite",
     "📋 Official Protocol & Rx Suite",
     "📈 Patient Mobility Progress",
@@ -261,13 +300,11 @@ if menu == "📊 Clinician Dashboard":
         </div>
     """, unsafe_allow_html=True)
     
-    # Doctor Logged-in Profile Selector
     selected_doctor = st.selectbox(
         "👨‍⚕️ Select Logged-in Specialist Profile:", 
         ["All Doctors", "Dr. Shahzaib Mughal", "Dr. Hassan Raza", "Dr. Ayesha Malik"]
     )
     
-    # Filter Appointments
     if selected_doctor != "All Doctors":
         doctor_apps = [a for a in st.session_state["appointments"] if a["Doctor"] == selected_doctor]
     else:
@@ -317,73 +354,99 @@ if menu == "📊 Clinician Dashboard":
                 <div style="margin-top: 8px; font-size: 0.88rem; color: #A3B1C6;">
                     <b style="color:#E0E1DD;">Lead Doctor:</b> {app['Doctor']} &nbsp;|&nbsp; 
                     <b style="color:#E0E1DD;">Schedule:</b> {app['Time']} ({app['Date']}) &nbsp;|&nbsp; 
-                    <b style="color:#E0E1DD;">Protocol:</b> {app['Type']}
+                    <b style="color:#E0E1DD;">Problem/Protocol:</b> {app['Type']}
                 </div>
             </div>
         """, unsafe_allow_html=True)
         
-        # Doctor Action Button to Confirm Pending Requests
         if app["Status"] == "PENDING":
             if st.button(f"✅ Accept & Confirm Appointment ({app['Patient']})", key=f"accept_{idx}"):
                 app["Status"] = "CONFIRMED"
                 st.success(f"Appointment confirmed for {app['Patient']}!")
                 st.rerun()
 
-# --- 8. MODULE 2: PATIENT REGISTRATION & INTAKE ---
-elif menu == "📝 Patient Registration & Intake":
+# --- 8. MODULE 2: DISEASE-BASED SMART BOOKING ---
+elif menu == "🩺 Disease-Based Smart Booking":
     st.markdown("""
         <div class="hero-banner">
-            <div class="hero-title">📝 Patient Intake & Booking Suite</div>
-            <div class="hero-sub">Book therapy sessions and trigger instant notifications to assigned specialists.</div>
+            <div class="hero-title">🩺 Disease-Based Smart Booking Engine</div>
+            <div class="hero-sub">Apni problem likhein — System aap ke liye best online specialist match kare ga.</div>
         </div>
     """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns([1, 1])
+    # STEP 1: PATIENT INPUT FORM
+    st.markdown("<h3>Step 1: Patient Symptom & Triage Form</h3>", unsafe_allow_html=True)
     
-    with col1:
-        st.markdown("<h4>💪 Book Session Form</h4>", unsafe_allow_html=True)
-        patient_name = st.text_input("Patient Full Name", placeholder="e.g. Fazal Bibi")
-        doctor_name = st.selectbox("Assign Specialist Doctor", ["Dr. Shahzaib Mughal", "Dr. Hassan Raza", "Dr. Ayesha Malik"])
-        rehab_type = st.selectbox("Target Protocol", ["Knee ACL Protocol", "Shoulder Abduction Index", "Elbow Mobility Protocol", "Post-Stroke Assessment"])
-        app_date = st.date_input("Consultation Date")
-        app_time = st.selectbox("Time Slot", ["09:00 AM", "10:00 AM", "11:30 AM", "02:00 PM", "04:00 PM"])
-        
-        if st.button("💪 Book Session Now"):
-            if patient_name:
-                new_app = {
-                    "Patient": patient_name,
-                    "Doctor": doctor_name,
-                    "Date": str(app_date),
-                    "Time": app_time,
-                    "Type": rehab_type,
-                    "Status": "PENDING"
-                }
-                st.session_state["appointments"].append(new_app)
-                
-                # Automated Email Attempt
-                try:
-                    doctor_emails = {
-                        "Dr. Shahzaib Mughal": "shahzaib@example.com",
-                        "Dr. Hassan Raza": "hassan@example.com",
-                        "Dr. Ayesha Malik": "ayesha@example.com"
-                    }
-                    target_email = doctor_emails.get(doctor_name, "alerts@telesynapse.com")
-                    send_doctor_email_notification(
-                        doctor_email=target_email,
-                        patient_name=patient_name,
-                        date_time=f"{app_date} at {app_time}",
-                        protocol=rehab_type
-                    )
-                    st.success(f"Session booked for {patient_name}! Email alert sent to {doctor_name}.")
-                except Exception:
-                    st.success(f"Session booked for {patient_name}! Request forwarded to {doctor_name}'s dashboard.")
-            else:
-                st.error("Patient name is required.")
+    col_a, col_b = st.columns([1, 1])
+    with col_a:
+        p_name = st.text_input("Patient Full Name", placeholder="e.g. Ali Ahmed")
+        p_problem = st.selectbox(
+            "What is your problem? (Select or Type)",
+            ["Knee ACL Pain", "Post-Stroke Shoulder", "Elbow Mobility Deficit", "Spine / Back Pain", "Sports Injury Rehab"]
+        )
+    with col_b:
+        p_lang = st.selectbox("Preferred Language", ["Urdu / Urdu-English", "English"])
+        p_time = st.selectbox("Preferred Timeframe", ["Today", "Tomorrow", "This Week"])
+    
+    search_btn = st.button("🔍 Find Matching Specialists")
 
-    with col2:
-        st.markdown("<h4>📋 Intake Registry Overview</h4>", unsafe_allow_html=True)
-        df_apps = pd.DataFrame(st.session_state["appointments"])
-        st.dataframe(df_apps, use_container_width=True)
+    # STEP 2: SYSTEM MATCHING & DOCTOR CARDS
+    if search_btn or "matched_docs" in st.session_state:
+        st.session_state["matched_docs"] = True
+        st.markdown("<hr style='border-color:#005F73;'><br><h3>Step 2: Best Matching Online Specialists</h3>", unsafe_allow_html=True)
+        
+        # Filter matching doctors based on problem
+        prob_clean = p_problem.lower()
+        matched = [d for d in DOCTORS_DATABASE if any(tag in prob_clean for tag in d["tags"])]
+        if not matched:
+            matched = DOCTORS_DATABASE  # Fallback to all if no exact keyword match
+            
+        for doc_idx, doc in enumerate(matched):
+            st.markdown(f"""
+                <div class="doctor-card">
+                    <span class="online-badge">● {doc['status']}</span>
+                    <h4 style="margin:0; font-size:1.2rem; color:#94D2BD;">👨‍⚕️ {doc['name']}</h4>
+                    <p style="margin:4px 0; font-size:0.88rem; color:#A3B1C6;">
+                        <b>Specialty:</b> {doc['title']} &nbsp;|&nbsp; 
+                        <b>Experience:</b> {doc['exp']} &nbsp;|&nbsp; 
+                        <b>Fee:</b> <span style="color:#94D2BD; font-weight:700;">{doc['fee']}</span>
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            c_slot, c_btn = st.columns([2, 1])
+            with c_slot:
+                selected_slot = st.selectbox(f"Select Available Slot for {doc['name']}:", doc["slots"], key=f"slot_{doc_idx}")
+            with c_btn:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button(f"💪 Book Now with {doc['name'].split()[1]}", key=f"book_{doc_idx}"):
+                    if p_name:
+                        # Append new appointment
+                        new_booking = {
+                            "Patient": p_name,
+                            "Doctor": doc["name"],
+                            "Date": "2026-09-02",
+                            "Time": selected_slot,
+                            "Type": p_problem,
+                            "Status": "PENDING"
+                        }
+                        st.session_state["appointments"].append(new_booking)
+                        
+                        # STEP 3: INSTANT NOTIFICATION
+                        try:
+                            send_doctor_email_notification(
+                                doctor_email=doc["email"],
+                                patient_name=p_name,
+                                date_time=selected_slot,
+                                protocol=p_problem
+                            )
+                        except Exception:
+                            pass
+                            
+                        st.success(f"🎉 **Appointment Confirmed!** Booked with {doc['name']} for {selected_slot}. Email & In-App Alerts sent.")
+                        st.balloons()
+                    else:
+                        st.error("Please enter Patient Full Name in Step 1 first!")
 
 # --- 9. MODULE 3: KINEMATIC MOTION AI SUITE ---
 elif menu == "📹 Kinematic Motion AI Suite":
