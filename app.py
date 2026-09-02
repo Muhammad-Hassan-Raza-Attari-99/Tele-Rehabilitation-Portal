@@ -1,9 +1,13 @@
 import streamlit as st
 import pandas as pd
 import random
-import textwrap
 import smtplib
 from email.mime.text import MIMEText
+
+# --- 0. BULLETPROOF HTML CLEANER ENGINE ---
+def clean_html(raw_html: str) -> str:
+    """Strips leading and trailing spaces from every line to kill Streamlit code-block parsing."""
+    return "".join(line.strip() for line in raw_html.splitlines())
 
 # --- 1. GLOBAL PAGE CONFIGURATION ---
 st.set_page_config(
@@ -61,110 +65,110 @@ base_font_size = "17px" if big_text else "15px"
 hero_title_size = "2.3rem" if big_text else "1.8rem"
 
 # --- 4. HIGH-CONTRAST VIBRANT COLOR SYSTEM & CSS ---
-global_css = textwrap.dedent(f"""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+global_css = f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
-    #MainMenu {{ visibility: hidden !important; }}
-    footer {{ visibility: hidden !important; }}
-    .stDeployButton {{ display: none !important; }}
-    header[data-testid="stHeader"] {{ background-color: transparent !important; }}
+#MainMenu {{ visibility: hidden !important; }}
+footer {{ visibility: hidden !important; }}
+.stDeployButton {{ display: none !important; }}
+header[data-testid="stHeader"] {{ background-color: transparent !important; }}
 
-    html, body, [class*="css"] {{
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        font-size: {base_font_size} !important;
-    }}
-    .stApp {{
-        background: #0B0F17 !important;
-        color: #F3F4F6 !important;
-    }}
+html, body, [class*="css"] {{
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: {base_font_size} !important;
+}}
+.stApp {{
+    background: #0B0F17 !important;
+    color: #F3F4F6 !important;
+}}
 
-    h1, h2, h3 {{ color: #34D399 !important; font-weight: 800 !important; }}
-    h4, h5, h6 {{ color: #38BDF8 !important; font-weight: 700 !important; }}
-    p, span, label {{ color: #E5E7EB; }}
+h1, h2, h3 {{ color: #34D399 !important; font-weight: 800 !important; }}
+h4, h5, h6 {{ color: #38BDF8 !important; font-weight: 700 !important; }}
+p, span, label {{ color: #E5E7EB; }}
 
-    [data-testid="stSidebar"] {{
-        background-color: #111827 !important;
-        border-right: 1px solid #1F2937 !important;
-        min-width: 310px !important;
-    }}
-    [data-testid="stSidebar"] * {{ color: #F3F4F6 !important; }}
+[data-testid="stSidebar"] {{
+    background-color: #111827 !important;
+    border-right: 1px solid #1F2937 !important;
+    min-width: 310px !important;
+}}
+[data-testid="stSidebar"] * {{ color: #F3F4F6 !important; }}
 
-    .brand-container {{
-        padding: 20px 16px;
-        background: linear-gradient(135deg, #064E3B 0%, #111827 100%);
-        border: 1px solid #059669;
-        border-radius: 16px;
-        margin-bottom: 24px;
-        text-align: center;
-        box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.2);
-    }}
-    .brand-title {{
-        color: #34D399 !important;
-        font-size: 1.7rem;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-    }}
-    .brand-sub {{
-        color: #9CA3AF !important;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        margin-top: 4px;
-    }}
+.brand-container {{
+    padding: 20px 16px;
+    background: linear-gradient(135deg, #064E3B 0%, #111827 100%);
+    border: 1px solid #059669;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    text-align: center;
+    box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.2);
+}}
+.brand-title {{
+    color: #34D399 !important;
+    font-size: 1.7rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}}
+.brand-sub {{
+    color: #9CA3AF !important;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
+}}
 
-    .hero-banner {{
-        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-        border: 1px solid #334155;
-        border-left: 5px solid #10B981;
-        border-radius: 16px;
-        padding: 24px 30px;
-        margin-bottom: 28px;
-        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
-    }}
-    .hero-title {{
-        color: #34D399 !important;
-        font-size: {hero_title_size};
-        font-weight: 800;
-        margin-bottom: 6px;
-    }}
-    .hero-sub {{ color: #94A3B8 !important; }}
+.hero-banner {{
+    background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+    border: 1px solid #334155;
+    border-left: 5px solid #10B981;
+    border-radius: 16px;
+    padding: 24px 30px;
+    margin-bottom: 28px;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+}}
+.hero-title {{
+    color: #34D399 !important;
+    font-size: {hero_title_size};
+    font-weight: 800;
+    margin-bottom: 6px;
+}}
+.hero-sub {{ color: #94A3B8 !important; }}
 
-    .doctor-card {{
-        background: #1E293B;
-        border: 1px solid #334155;
-        border-radius: 16px;
-        padding: 22px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    }}
+.doctor-card {{
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}}
 
-    .stButton>button {{
-        background: linear-gradient(90deg, #10B981, #06B6D4) !important;
-        color: #0B0F17 !important;
-        font-weight: 800 !important;
-        border-radius: 12px !important;
-        border: none !important;
-        padding: 12px 24px !important;
-        font-size: 0.95rem !important;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-    }}
-    .stButton>button:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
-    }}
+.stButton>button {{
+    background: linear-gradient(90deg, #10B981, #06B6D4) !important;
+    color: #0B0F17 !important;
+    font-weight: 800 !important;
+    border-radius: 12px !important;
+    border: none !important;
+    padding: 12px 24px !important;
+    font-size: 0.95rem !important;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}}
+.stButton>button:hover {{
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+}}
 
-    .stTextInput>div>div>input, .stSelectbox>div>div>div {{
-        background-color: #1E293B !important;
-        color: #F8FAFC !important;
-        border-radius: 10px !important;
-        border: 1px solid #334155 !important;
-    }}
-    </style>
-""").strip()
+.stTextInput>div>div>input, .stSelectbox>div>div>div {{
+    background-color: #1E293B !important;
+    color: #F8FAFC !important;
+    border-radius: 10px !important;
+    border: 1px solid #334155 !important;
+}}
+</style>
+"""
 
-st.markdown(global_css, unsafe_allow_html=True)
+st.markdown(clean_html(global_css), unsafe_allow_html=True)
 
 # --- 5. SESSION STATE DATA ---
 if "appointments" not in st.session_state:
@@ -229,14 +233,13 @@ DOCTORS_DATABASE = [
 ]
 
 # --- 6. SIDEBAR ---
-sidebar_html = textwrap.dedent("""
-    <div class="brand-container">
-        <div class="brand-title">🩺 TeleSynapse</div>
-        <div class="brand-sub">Clinical Tele-Rehab Portal</div>
-    </div>
-""").strip()
-
-st.sidebar.markdown(sidebar_html, unsafe_allow_html=True)
+sidebar_html = """
+<div class="brand-container">
+    <div class="brand-title">🩺 TeleSynapse</div>
+    <div class="brand-sub">Clinical Tele-Rehab Portal</div>
+</div>
+"""
+st.sidebar.markdown(clean_html(sidebar_html), unsafe_allow_html=True)
 
 menu = st.sidebar.radio("Navigation Menu", [
     "🩺 Disease-Based Smart Booking",
@@ -249,7 +252,7 @@ menu = st.sidebar.radio("Navigation Menu", [
 def render_atm_slip(booking):
     qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=TeleSynapse-Slip-{booking['SlipNo']}"
     
-    slip_html = textwrap.dedent(f"""
+    slip_html = f"""
     <div style="background:#0F172A; border:2px dashed #38BDF8; border-radius:16px; padding:24px; max-width:440px; margin:20px auto; font-family:'JetBrains Mono', monospace; color:#E5E7EB; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
         
         <div style="text-align:center; border-bottom:2px solid #334155; padding-bottom:12px; margin-bottom:14px;">
@@ -323,21 +326,21 @@ def render_atm_slip(booking):
             www.telesynapse.com | Powered by AI
         </div>
     </div>
-    """).strip()
+    """
 
-    st.markdown(slip_html, unsafe_allow_html=True)
+    st.markdown(clean_html(slip_html), unsafe_allow_html=True)
 
 # --- 8. MODULE: DISEASE-BASED SMART BOOKING ---
 if menu == "🩺 Disease-Based Smart Booking":
     
     if st.session_state["booking_step"] == "FORM":
-        banner_html = textwrap.dedent("""
-            <div class="hero-banner">
-                <div class="hero-title">Start Your Tele-Rehab Journey</div>
-                <div class="hero-sub">Get matched with a specialist & receive your Digital ATM Slip instantly.</div>
-            </div>
-        """).strip()
-        st.markdown(banner_html, unsafe_allow_html=True)
+        banner_html = """
+        <div class="hero-banner">
+            <div class="hero-title">Start Your Tele-Rehab Journey</div>
+            <div class="hero-sub">Get matched with a specialist & receive your Digital ATM Slip instantly.</div>
+        </div>
+        """
+        st.markdown(clean_html(banner_html), unsafe_allow_html=True)
         
         with st.form("smart_booking_form"):
             st.markdown("<h4>1. Clinical Symptoms & History</h4>", unsafe_allow_html=True)
@@ -392,17 +395,17 @@ if menu == "🩺 Disease-Based Smart Booking":
         matched = [d for d in DOCTORS_DATABASE if any(t in disease_q for t in d["tags"])] or DOCTORS_DATABASE
 
         for idx, doc in enumerate(matched):
-            doc_card_html = textwrap.dedent(f"""
-                <div class="doctor-card">
-                    <div style="display:flex; justify-content:space-between;">
-                        <span style="color:#34D399; font-weight:800; font-size:0.85rem;">🟢 ONLINE NOW</span>
-                        <span style="color:#38BDF8; font-weight:800; font-size:1.1rem;">{doc['fee']}</span>
-                    </div>
-                    <h3 style="margin:4px 0;">{doc['name']}</h3>
-                    <p style="color:#94A3B8; margin:0;">{doc['title']} | {doc['exp']} Exp | ⭐ {doc['rating']}</p>
+            doc_card_html = f"""
+            <div class="doctor-card">
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color:#34D399; font-weight:800; font-size:0.85rem;">🟢 ONLINE NOW</span>
+                    <span style="color:#38BDF8; font-weight:800; font-size:1.1rem;">{doc['fee']}</span>
                 </div>
-            """).strip()
-            st.markdown(doc_card_html, unsafe_allow_html=True)
+                <h3 style="margin:4px 0;">{doc['name']}</h3>
+                <p style="color:#94A3B8; margin:0;">{doc['title']} | {doc['exp']} Exp | ⭐ {doc['rating']}</p>
+            </div>
+            """
+            st.markdown(clean_html(doc_card_html), unsafe_allow_html=True)
 
             c_slot, c_btn = st.columns([1, 2])
             with c_slot:
@@ -439,8 +442,14 @@ if menu == "🩺 Disease-Based Smart Booking":
 
     elif st.session_state["booking_step"] == "SLIP":
         booking = st.session_state["latest_booking"]
-        st.balloons()
-        st.success("🎉 Appointment Confirmed! Digital Slip generated and dispatched.")
+
+        confirmation_banner = """
+        <div style="background: linear-gradient(90deg, #064E3B 0%, #065F46 100%); border: 1px solid #10B981; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
+            <div style="color: #34D399; font-weight: 800; font-size: 1.1rem; letter-spacing: 0.5px;">✔ APPOINTMENT OFFICIALLY CONFIRMED & DISPATCHED</div>
+            <div style="color: #D1D5DB; font-size: 0.88rem; margin-top: 4px;">Digital appointment slip verified. Encrypted clinical record transmitted to attending specialist.</div>
+        </div>
+        """
+        st.markdown(clean_html(confirmation_banner), unsafe_allow_html=True)
 
         # Render Clean ATM Digital Slip
         render_atm_slip(booking)
