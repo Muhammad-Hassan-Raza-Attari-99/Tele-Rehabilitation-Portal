@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import random
-import datetime
+import textwrap
 import smtplib
 from email.mime.text import MIMEText
 
@@ -61,7 +61,7 @@ base_font_size = "17px" if big_text else "15px"
 hero_title_size = "2.3rem" if big_text else "1.8rem"
 
 # --- 4. HIGH-CONTRAST VIBRANT COLOR SYSTEM & CSS ---
-st.markdown(f"""
+global_css = textwrap.dedent(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
@@ -79,12 +79,10 @@ st.markdown(f"""
         color: #F3F4F6 !important;
     }}
 
-    /* HEADINGS & ACCENTS */
     h1, h2, h3 {{ color: #34D399 !important; font-weight: 800 !important; }}
     h4, h5, h6 {{ color: #38BDF8 !important; font-weight: 700 !important; }}
     p, span, label {{ color: #E5E7EB; }}
 
-    /* SIDEBAR STYLING */
     [data-testid="stSidebar"] {{
         background-color: #111827 !important;
         border-right: 1px solid #1F2937 !important;
@@ -92,7 +90,6 @@ st.markdown(f"""
     }}
     [data-testid="stSidebar"] * {{ color: #F3F4F6 !important; }}
 
-    /* BRAND LOGO */
     .brand-container {{
         padding: 20px 16px;
         background: linear-gradient(135deg, #064E3B 0%, #111827 100%);
@@ -117,7 +114,6 @@ st.markdown(f"""
         margin-top: 4px;
     }}
 
-    /* HERO BANNER */
     .hero-banner {{
         background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
         border: 1px solid #334155;
@@ -135,80 +131,6 @@ st.markdown(f"""
     }}
     .hero-sub {{ color: #94A3B8 !important; }}
 
-    /* --- ATM DIGITAL SLIP STYLING --- */
-    .atm-slip-wrapper {{
-        display: flex;
-        justify-content: center;
-        margin: 20px 0 30px 0;
-    }}
-    .atm-slip {{
-        background: #0F172A;
-        border: 2px dashed #38BDF8;
-        border-radius: 16px;
-        width: 100%;
-        max-width: 450px;
-        padding: 26px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.15);
-        font-family: 'JetBrains Mono', monospace !important;
-        position: relative;
-    }}
-    .atm-header {{
-        text-align: center;
-        border-bottom: 2px solid #334155;
-        padding-bottom: 14px;
-        margin-bottom: 16px;
-    }}
-    .atm-title {{
-        color: #38BDF8;
-        font-size: 1.25rem;
-        font-weight: 800;
-        letter-spacing: 1px;
-    }}
-    .atm-subtitle {{
-        color: #94A3B8;
-        font-size: 0.72rem;
-        letter-spacing: 2px;
-    }}
-    .atm-row {{
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        font-size: 0.85rem;
-    }}
-    .atm-label {{ color: #64748B; font-weight: 500; }}
-    .atm-value {{ color: #F8FAFC; font-weight: 700; text-align: right; }}
-    .atm-section-title {{
-        color: #34D399;
-        font-size: 0.75rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin: 14px 0 6px 0;
-        border-bottom: 1px solid #1E293B;
-        padding-bottom: 3px;
-    }}
-    .atm-badge {{
-        background: #064E3B;
-        color: #34D399;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 0.78rem;
-        font-weight: 700;
-    }}
-    .atm-qr-box {{
-        text-align: center;
-        margin-top: 18px;
-        padding-top: 14px;
-        border-top: 2px dashed #334155;
-    }}
-    .atm-footer {{
-        text-align: center;
-        color: #64748B;
-        font-size: 0.7rem;
-        margin-top: 10px;
-    }}
-
-    /* DOCTOR CARD */
     .doctor-card {{
         background: #1E293B;
         border: 1px solid #334155;
@@ -216,13 +138,8 @@ st.markdown(f"""
         padding: 22px;
         margin-bottom: 20px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        transition: transform 0.2s ease;
-    }}
-    .doctor-card:hover {{
-        border-color: #10B981;
     }}
 
-    /* INPUTS & BUTTONS */
     .stButton>button {{
         background: linear-gradient(90deg, #10B981, #06B6D4) !important;
         color: #0B0F17 !important;
@@ -245,7 +162,9 @@ st.markdown(f"""
         border: 1px solid #334155 !important;
     }}
     </style>
-""", unsafe_allow_html=True)
+""").strip()
+
+st.markdown(global_css, unsafe_allow_html=True)
 
 # --- 5. SESSION STATE DATA ---
 if "appointments" not in st.session_state:
@@ -310,12 +229,14 @@ DOCTORS_DATABASE = [
 ]
 
 # --- 6. SIDEBAR ---
-st.sidebar.markdown("""
+sidebar_html = textwrap.dedent("""
     <div class="brand-container">
         <div class="brand-title">🩺 TeleSynapse</div>
         <div class="brand-sub">Clinical Tele-Rehab Portal</div>
     </div>
-""", unsafe_allow_html=True)
+""").strip()
+
+st.sidebar.markdown(sidebar_html, unsafe_allow_html=True)
 
 menu = st.sidebar.radio("Navigation Menu", [
     "🩺 Disease-Based Smart Booking",
@@ -324,101 +245,99 @@ menu = st.sidebar.radio("Navigation Menu", [
     "📈 Patient Mobility Progress"
 ])
 
-# --- 7. HELPER: RENDER ATM DIGITAL SLIP ---
+# --- 7. HELPER: CLEAN RENDER OF ATM DIGITAL SLIP ---
 def render_atm_slip(booking):
     qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=TeleSynapse-Slip-{booking['SlipNo']}"
     
-    st.markdown(f"""
-        <div class="atm-slip-wrapper">
-            <div class="atm-slip">
-                <div class="atm-header">
-                    <div class="atm-title">TELE-SYNAPSE HEALTH</div>
-                    <div class="atm-subtitle">DIGITAL APPOINTMENT SLIP</div>
-                </div>
-                
-                <div class="atm-row">
-                    <span class="atm-label">SLIP NO:</span>
-                    <span class="atm-value" style="color:#38BDF8;">{booking['SlipNo']}</span>
-                </div>
-                <div class="atm-row">
-                    <span class="atm-label">REF ID:</span>
-                    <span class="atm-value">{booking['RefID']}</span>
-                </div>
-                <div class="atm-row">
-                    <span class="atm-label">STATUS:</span>
-                    <span class="atm-badge">● {booking['Status']}</span>
-                </div>
-
-                <div class="atm-section-title">PATIENT DETAILS</div>
-                <div class="atm-row">
-                    <span class="atm-label">Name:</span>
-                    <span class="atm-value">{booking['Patient']}</span>
-                </div>
-                <div class="atm-row">
-                    <span class="atm-label">Phone:</span>
-                    <span class="atm-value">{booking['Phone']}</span>
-                </div>
-                <div class="atm-row">
-                    <span class="atm-label">Demographics:</span>
-                    <span class="atm-value">{booking['Age']} yrs | {booking['Gender']}</span>
-                </div>
-
-                <div class="atm-section-title">CLINICAL & DOCTOR</div>
-                <div class="atm-row">
-                    <span class="atm-label">Condition:</span>
-                    <span class="atm-value" style="color:#34D399;">{booking['Type']}</span>
-                </div>
-                <div class="atm-row">
-                    <span class="atm-label">Onset/Pain:</span>
-                    <span class="atm-value">{booking['Onset']} | {booking['PainLevel']}/10</span>
-                </div>
-                <div class="atm-row">
-                    <span class="atm-label">Doctor:</span>
-                    <span class="atm-value">{booking['Doctor']}</span>
-                </div>
-
-                <div class="atm-section-title">APPOINTMENT WINDOW</div>
-                <div class="atm-row">
-                    <span class="atm-label">Date:</span>
-                    <span class="atm-value">{booking['Date']}</span>
-                </div>
-                <div class="atm-row">
-                    <span class="atm-label">Time:</span>
-                    <span class="atm-value">{booking['Time']}</span>
-                </div>
-                <div class="atm-row">
-                    <span class="atm-label">Platform:</span>
-                    <span class="atm-value" style="color:#38BDF8;">{booking['Platform']}</span>
-                </div>
-                <div class="atm-row">
-                    <span class="atm-label">Fee:</span>
-                    <span class="atm-value">{booking['Fee']} (Payable Post-Session)</span>
-                </div>
-
-                <div class="atm-qr-box">
-                    <img src="{qr_url}" width="100" style="border-radius:8px; border:2px solid #334155;" />
-                    <div style="font-size:0.72rem; color:#94A3B8; margin-top:6px;">Scan QR to verify or add session to calendar</div>
-                </div>
-
-                <div class="atm-footer">
-                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━<br>
-                    Need Help? WhatsApp: +92 309 7964195<br>
-                    www.telesynapse.com | Powered by AI
-                </div>
-            </div>
+    slip_html = textwrap.dedent(f"""
+    <div style="background:#0F172A; border:2px dashed #38BDF8; border-radius:16px; padding:24px; max-width:440px; margin:20px auto; font-family:'JetBrains Mono', monospace; color:#E5E7EB; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+        
+        <div style="text-align:center; border-bottom:2px solid #334155; padding-bottom:12px; margin-bottom:14px;">
+            <div style="color:#38BDF8; font-size:1.25rem; font-weight:800; letter-spacing:1px;">TELE-SYNAPSE HEALTH</div>
+            <div style="color:#94A3B8; font-size:0.72rem; letter-spacing:2px;">DIGITAL APPOINTMENT SLIP</div>
         </div>
-    """, unsafe_allow_html=True)
+
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
+            <span style="color:#64748B;">SLIP NO:</span>
+            <span style="color:#38BDF8; font-weight:700;">{booking['SlipNo']}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.85rem;">
+            <span style="color:#64748B;">REF ID:</span>
+            <span style="color:#F8FAFC; font-weight:700;">{booking['RefID']}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:0.85rem;">
+            <span style="color:#64748B;">STATUS:</span>
+            <span style="background:#064E3B; color:#34D399; padding:2px 8px; border-radius:4px; font-weight:700;">● {booking['Status']}</span>
+        </div>
+
+        <div style="color:#34D399; font-size:0.75rem; font-weight:800; border-bottom:1px solid #1E293B; margin:14px 0 6px 0; padding-bottom:2px;">PATIENT DETAILS</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.85rem;">
+            <span style="color:#64748B;">Name:</span>
+            <span style="color:#F8FAFC; font-weight:700;">{booking['Patient']}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.85rem;">
+            <span style="color:#64748B;">Phone:</span>
+            <span style="color:#F8FAFC; font-weight:700;">{booking['Phone']}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:0.85rem;">
+            <span style="color:#64748B;">Demographics:</span>
+            <span style="color:#F8FAFC; font-weight:700;">{booking['Age']} yrs | {booking['Gender']}</span>
+        </div>
+
+        <div style="color:#34D399; font-size:0.75rem; font-weight:800; border-bottom:1px solid #1E293B; margin:14px 0 6px 0; padding-bottom:2px;">CLINICAL & DOCTOR</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.85rem;">
+            <span style="color:#64748B;">Condition:</span>
+            <span style="color:#34D399; font-weight:700;">{booking['Type']}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.85rem;">
+            <span style="color:#64748B;">Onset / Pain:</span>
+            <span style="color:#F8FAFC; font-weight:700;">{booking['Onset']} | {booking['PainLevel']}/10</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:0.85rem;">
+            <span style="color:#64748B;">Doctor:</span>
+            <span style="color:#F8FAFC; font-weight:700;">{booking['Doctor']}</span>
+        </div>
+
+        <div style="color:#34D399; font-size:0.75rem; font-weight:800; border-bottom:1px solid #1E293B; margin:14px 0 6px 0; padding-bottom:2px;">APPOINTMENT WINDOW</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.85rem;">
+            <span style="color:#64748B;">Date & Time:</span>
+            <span style="color:#F8FAFC; font-weight:700;">{booking['Date']} @ {booking['Time']}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.85rem;">
+            <span style="color:#64748B;">Platform:</span>
+            <span style="color:#38BDF8; font-weight:700;">{booking['Platform']}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:0.85rem;">
+            <span style="color:#64748B;">Fee:</span>
+            <span style="color:#F8FAFC; font-weight:700;">{booking['Fee']} (Payable Post-Session)</span>
+        </div>
+
+        <div style="text-align:center; margin-top:16px; padding-top:12px; border-top:2px dashed #334155;">
+            <img src="{qr_url}" width="95" style="border-radius:8px; border:2px solid #334155;" />
+            <div style="font-size:0.7rem; color:#94A3B8; margin-top:6px;">Scan QR to verify or sync session to calendar</div>
+        </div>
+
+        <div style="text-align:center; color:#64748B; font-size:0.68rem; margin-top:12px;">
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━<br>
+            Need Help? WhatsApp: +92 309 7964195<br>
+            www.telesynapse.com | Powered by AI
+        </div>
+    </div>
+    """).strip()
+
+    st.markdown(slip_html, unsafe_allow_html=True)
 
 # --- 8. MODULE: DISEASE-BASED SMART BOOKING ---
 if menu == "🩺 Disease-Based Smart Booking":
     
     if st.session_state["booking_step"] == "FORM":
-        st.markdown("""
+        banner_html = textwrap.dedent("""
             <div class="hero-banner">
                 <div class="hero-title">Start Your Tele-Rehab Journey</div>
                 <div class="hero-sub">Get matched with a specialist & receive your Digital ATM Slip instantly.</div>
             </div>
-        """, unsafe_allow_html=True)
+        """).strip()
+        st.markdown(banner_html, unsafe_allow_html=True)
         
         with st.form("smart_booking_form"):
             st.markdown("<h4>1. Clinical Symptoms & History</h4>", unsafe_allow_html=True)
@@ -473,7 +392,7 @@ if menu == "🩺 Disease-Based Smart Booking":
         matched = [d for d in DOCTORS_DATABASE if any(t in disease_q for t in d["tags"])] or DOCTORS_DATABASE
 
         for idx, doc in enumerate(matched):
-            st.markdown(f"""
+            doc_card_html = textwrap.dedent(f"""
                 <div class="doctor-card">
                     <div style="display:flex; justify-content:space-between;">
                         <span style="color:#34D399; font-weight:800; font-size:0.85rem;">🟢 ONLINE NOW</span>
@@ -482,7 +401,8 @@ if menu == "🩺 Disease-Based Smart Booking":
                     <h3 style="margin:4px 0;">{doc['name']}</h3>
                     <p style="color:#94A3B8; margin:0;">{doc['title']} | {doc['exp']} Exp | ⭐ {doc['rating']}</p>
                 </div>
-            """, unsafe_allow_html=True)
+            """).strip()
+            st.markdown(doc_card_html, unsafe_allow_html=True)
 
             c_slot, c_btn = st.columns([1, 2])
             with c_slot:
@@ -522,7 +442,7 @@ if menu == "🩺 Disease-Based Smart Booking":
         st.balloons()
         st.success("🎉 Appointment Confirmed! Digital Slip generated and dispatched.")
 
-        # Display ATM Slip
+        # Render Clean ATM Digital Slip
         render_atm_slip(booking)
 
         c_a1, c_a2, c_a3 = st.columns(3)
