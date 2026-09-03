@@ -39,7 +39,7 @@ if st.session_state["drawer_open"]:
     }
     """
 
-# Inject High-Contrast Medical UI Styling & Alert Text Fixes
+# Complete CSS Fixes to Eliminate White-on-White and Black-on-Black Invisible Text
 global_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -56,31 +56,69 @@ html, body, [class*="css"] {{
     font-size: {base_font} !important;
 }}
 
-/* GLOBAL BACKGROUND */
+/* GLOBAL LIGHT BACKGROUND */
 .stApp {{
     background-color: #F8FAFC !important;
     color: #0F172A !important;
-    transition: filter 0.3s ease-in-out;
+}}
+
+/* FORCE MAIN AREA TEXT TO BE 100% VISIBLE DARK NAVY */
+.stApp p, .stApp span, .stApp label, .stApp div[data-testid="stMarkdownContainer"] p {{
+    color: #0F172A !important;
+    font-weight: 600;
 }}
 
 h1, h2, h3 {{ color: #1E3A8A !important; font-weight: 800 !important; }}
 h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
 
-/* STREAMLIT ALERT & WARNING BOX TEXT FIX (SOLVES WASHED-OUT WHITE TEXT ON YELLOW) */
+/* FIX INPUT FIELD LABELS & RADIO TEXT (SOLVES WHITE-ON-WHITE INVISIBLE LABELS) */
+div[data-testid="stWidgetLabel"] p, 
+label[data-testid="stWidgetLabel"] p,
+[data-testid="stWidgetLabel"] span {{
+    color: #0F172A !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+}}
+
+div[data-testid="stRadio"] label p, 
+div[data-testid="stRadio"] span {{
+    color: #0F172A !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+}}
+
+/* FIX TAB TEXT COLOR */
+button[data-baseweb="tab"] p, 
+button[data-baseweb="tab"] span {{
+    color: #1E3A8A !important;
+    font-weight: 800 !important;
+    font-size: 1rem !important;
+}}
+
+/* FIX INPUT FIELDS BACKGROUND & TEXT */
+div[data-baseweb="input"] {{
+    background-color: #FFFFFF !important;
+    border: 1.5px solid #CBD5E1 !important;
+    border-radius: 8px !important;
+}}
+
+div[data-baseweb="input"] input {{
+    color: #0F172A !important;
+    background-color: #FFFFFF !important;
+    font-weight: 600 !important;
+}}
+
+/* STREAMLIT ALERT BOX FIX */
 [data-testid="stAlert"] {{
     border-radius: 12px !important;
     padding: 14px 18px !important;
 }}
-[data-testid="stAlert"] p, 
-[data-testid="stAlert"] div, 
-[data-testid="stAlert"] span,
-.stAlert p, .stAlert div {{
+[data-testid="stAlert"] p, [data-testid="stAlert"] div {{
     color: #0F172A !important;
     font-weight: 700 !important;
-    font-size: 0.98rem !important;
 }}
 
-/* STREAMLIT SIDEBAR - HIGH CONTRAST GUARANTEE */
+/* STREAMLIT SIDEBAR */
 [data-testid="stSidebar"] {{
     background-color: #FFFFFF !important;
     border-right: 1px solid #CBD5E1 !important;
@@ -88,34 +126,15 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
 
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] span,
-[data-testid="stSidebar"] label,
-[data-testid="stSidebar"] div,
-[data-testid="stSidebar"] .stMarkdown {{
+[data-testid="stSidebar"] label {{
     color: #0F172A !important;
     font-weight: 600 !important;
 }}
 
-[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {{
-    color: #1E3A8A !important;
-    font-weight: 800 !important;
-    font-size: 0.95rem !important;
-}}
-
-[data-testid="stSidebar"] [role="radiogroup"] label p {{
-    color: #1E293B !important;
-    font-weight: 600 !important;
-    font-size: 0.92rem !important;
-}}
-
-[data-testid="stSidebar"] [role="radiogroup"] label[data-checked="true"] p {{
-    color: #0284C7 !important;
-    font-weight: 800 !important;
-}}
-
-/* PURE BLACK SLEEK BRANDING CONTAINER */
+/* PURE BLACK SIDEBAR BRANDING CONTAINER (TEXT HIGH-CONTRAST FIX) */
 .brand-container {{
     padding: 20px 16px;
-    background: #0A0D14 !important; /* PURE OBSIDIAN BLACK */
+    background-color: #0A0D14 !important; /* PURE OBSIDIAN BLACK */
     border: 1px solid #1E293B !important;
     border-radius: 16px;
     margin-bottom: 20px;
@@ -129,15 +148,15 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     gap: 10px;
 }}
 .brand-title {{
-    color: #FFFFFF !important;
-    font-size: 1.5rem;
-    font-weight: 800;
+    color: #FFFFFF !important; /* CRISP WHITE TITLE */
+    font-size: 1.5rem !important;
+    font-weight: 800 !important;
     letter-spacing: -0.5px;
 }}
 .brand-sub {{
-    color: #38BDF8 !important; /* ELECTRIC CYAN ACCENT */
-    font-size: 0.72rem;
-    font-weight: 700;
+    color: #38BDF8 !important; /* ELECTRIC CYAN SUBTITLE */
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
     text-transform: uppercase;
     letter-spacing: 1.8px;
     margin-top: 6px;
@@ -170,16 +189,6 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     object-fit: cover;
     border: 2px solid #0284C7;
     background-color: #E2E8F0;
-}}
-
-/* CLINICAL CARDS */
-.clinical-card {{
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
 }}
 
 /* SMART VERTICAL DASHBOARD OVERLAY PANEL */
@@ -288,10 +297,7 @@ st.markdown(global_css, unsafe_allow_html=True)
 # 1. PROFESSIONAL CLINICAL AVATARS (SVG FALLBACKS)
 # ==========================================
 
-# Professional Medical Doctor Coat Avatar (Inline SVG)
 DOCTOR_FALLBACK_SVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%231E3A8A'/><circle cx='50' cy='32' r='18' fill='%23E2E8F0'/><path d='M20 88 C 20 60, 80 60, 80 88 Z' fill='%23FFFFFF'/><path d='M42 50 L50 65 L58 50 L50 88 Z' fill='%230284C7'/><circle cx='50' cy='68' r='4' fill='%2338BDF8'/></svg>"
-
-# Professional Clean Patient Silhouette Avatar (Inline SVG)
 PATIENT_FALLBACK_SVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%230284C7'/><circle cx='50' cy='35' r='18' fill='%23FFFFFF'/><path d='M22 88 C 22 62, 78 62, 78 88 Z' fill='%23FFFFFF'/></svg>"
 
 
@@ -301,7 +307,6 @@ def resolve_profile_avatar(user_dict: dict) -> str:
     if pic and isinstance(pic, str) and len(pic.strip()) > 0:
         return pic
     
-    # Fallback when no photo is uploaded by user
     if user_dict.get("role") == "doctor":
         return DOCTOR_FALLBACK_SVG
     return PATIENT_FALLBACK_SVG
@@ -331,22 +336,6 @@ if "users_db" not in st.session_state:
 if "authenticated_user" not in st.session_state:
     st.session_state["authenticated_user"] = st.session_state["users_db"]["patient@demo.com"]
 
-if "patient_photos" not in st.session_state:
-    st.session_state["patient_photos"] = {
-        "TS-P-001": [
-            {
-                "uuid_filename": f"{uuid.uuid4().hex[:10]}.jpg",
-                "tag": "Before Photo",
-                "ai_analysis": "Detected: Knee Joint, Swelling: Moderate, Flexion: 45°",
-                "timestamp": "2026-08-10 14:30:00",
-                "selected_for_report": True
-            }
-        ]
-    }
-
-if "audit_logs" not in st.session_state:
-    st.session_state["audit_logs"] = []
-
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
         {"sender": "TS-D-004", "text": "Hello! Please share your flexion progress image before our video session."},
@@ -355,7 +344,7 @@ if "chat_messages" not in st.session_state:
 
 
 # ==========================================
-# 3. HELPER UTILITIES & LOADERS
+# 3. HELPER UTILITIES & HEADER
 # ==========================================
 
 def render_loader_component(message="Securing Your Session..."):
@@ -370,13 +359,6 @@ def render_loader_component(message="Securing Your Session..."):
     ph.markdown(loader_html, unsafe_allow_html=True)
     time.sleep(1.0)
     ph.empty()
-
-
-def add_audit_log(actor_proxy: str, action: str, details: str):
-    st.session_state["audit_logs"].append({
-        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "actor": actor_proxy, "action": action, "details": details
-    })
 
 
 def render_top_right_profile_header():
@@ -412,12 +394,10 @@ if st.session_state["drawer_open"]:
     
     st.markdown(f"""
     <div class="vertical-drawer-overlay">
-        <!-- HEADER CLOSE BAR -->
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
             <div style="font-weight:800; font-size:1.3rem; color:#38BDF8;">🩺 TeleRehab Smart Vertical Portal</div>
         </div>
 
-        <!-- SECTION 1: WELCOME CARD -->
         <div class="drawer-welcome-card">
             <div style="font-size:0.85rem; text-transform:uppercase; opacity:0.8; font-weight:700;">Welcome Back</div>
             <div style="font-size:1.6rem; font-weight:800; margin-top:2px;">Good Morning, {u_name}</div>
@@ -426,7 +406,6 @@ if st.session_state["drawer_open"]:
             </div>
         </div>
 
-        <!-- SECTION 2: QUICK ACTIONS VERTICAL BUTTONS -->
         <div style="margin-bottom: 22px;">
             <div style="font-size:0.85rem; color:#94A3B8; font-weight:700; text-transform:uppercase; margin-bottom:10px;">Quick Actions</div>
             <div class="drawer-quick-btn">▶️ Start New Tele-Rehab Session</div>
@@ -434,7 +413,6 @@ if st.session_state["drawer_open"]:
             <div class="drawer-quick-btn">📊 View AI Rehabilitation Insights</div>
         </div>
 
-        <!-- SECTION 3: AI HEALTH FEED -->
         <div style="margin-bottom: 22px;">
             <div style="font-size:0.85rem; color:#94A3B8; font-weight:700; text-transform:uppercase; margin-bottom:10px;">AI Health Feed</div>
             <div class="drawer-feed-card">
@@ -445,13 +423,8 @@ if st.session_state["drawer_open"]:
                 <div style="color:#F59E0B; font-weight:700;">Patient Ali</div>
                 <div style="color:#E2E8F0; font-size:0.9rem; margin-top:2px;">Missed 2 assigned exercises. Send push reminder? 🔔</div>
             </div>
-            <div class="drawer-feed-card">
-                <div style="color:#10B981; font-weight:700;">Registration Alert</div>
-                <div style="color:#E2E8F0; font-size:0.9rem; margin-top:2px;">New Doctor Registration Pending Approval in Admin Panel</div>
-            </div>
         </div>
 
-        <!-- SECTION 4: BOTTOM NAV INSIDE DASHBOARD -->
         <div class="drawer-bottom-nav">
             <span style="color:#38BDF8; font-weight:800;">🏠 Home</span>
             <span style="color:#94A3B8; font-weight:600;">👥 Patients</span>
@@ -472,7 +445,6 @@ if st.session_state["drawer_open"]:
 # 5. SIDEBAR NAVIGATION & BLACK BRANDING CARD
 # ==========================================
 
-# Sleek Black Header Container
 st.sidebar.markdown("""
 <div class="brand-container">
     <div class="brand-title-wrap">
@@ -510,7 +482,20 @@ render_top_right_profile_header()
 
 if menu == "🔐 Login & Quick Registration":
     st.markdown("### 🔐 Multi-Role Authentication Gateway")
-    st.caption("Select your role or sign in below:")
+    
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        if st.button("👩‍⚕️ Load Preset: Doctor (Dr. Ayesha)"):
+            st.session_state["authenticated_user"] = st.session_state["users_db"]["doctor@demo.com"]
+            st.success("Loaded Doctor Account!")
+            st.rerun()
+    with col_p2:
+        if st.button("👨‍💼 Load Preset: Patient (Hassan Raza)"):
+            st.session_state["authenticated_user"] = st.session_state["users_db"]["patient@demo.com"]
+            st.success("Loaded Patient Account!")
+            st.rerun()
+
+    st.markdown("---")
 
     tab_login, tab_reg = st.tabs(["🔑 Sign In", "📝 Register New Account"])
 
@@ -525,21 +510,19 @@ if menu == "🔐 Login & Quick Registration":
 
             if user_entry and user_entry["password_hash"] == login_pass:
                 st.session_state["authenticated_user"] = user_entry
-                add_audit_log(user_entry["proxy_id"], "LOGIN", f"Logged in as {role_select}")
                 st.success(f"Welcome back, {user_entry['name']}!")
                 st.rerun()
             else:
                 st.error("Invalid Email or Password.")
 
     with tab_reg:
-        st.markdown("#### Account Registration")
+        st.markdown("#### Create New Account")
         r_role = st.selectbox("Registering as:", ["Patient", "Doctor"])
         r_name = st.text_input("Full Name")
         r_email = st.text_input("Email Address")
         r_pass = st.text_input("Create Password", type="password")
         
         st.markdown("##### 🖼️ Upload Profile Photo (Optional)")
-        st.caption("If no photo is uploaded, a professional clinical icon will be assigned automatically.")
         uploaded_profile_file = st.file_uploader("Upload Profile Image (JPG/PNG)", type=["jpg", "png", "jpeg"])
         
         final_pic = ""
@@ -577,7 +560,7 @@ elif menu == "👑 Super Admin Portal (/admin/login)":
 
 
 # ==========================================
-# 8. MODULE 3: PATIENT PORTAL & REASONABLE CAROUSEL
+# 8. MODULE 3: PATIENT PORTAL & REHAB CAROUSEL
 # ==========================================
 
 elif menu == "👤 Patient Portal & Photo Suite":
@@ -586,9 +569,7 @@ elif menu == "👤 Patient Portal & Photo Suite":
     else:
         st.markdown("### 👤 Patient Clinical Portal")
         
-        # SELF-CONTAINED HORIZONTAL SNAP CAROUSEL (GUARANTEED NO BLANK/DISAPPEARING IFRAME)
         st.markdown("#### 🎯 Interactive Pose & Exercise Gallery")
-        
         carousel_html = """
         <style>
         body { margin: 0; padding: 0; background: transparent; font-family: sans-serif; }
@@ -598,14 +579,6 @@ elif menu == "👤 Patient Portal & Photo Suite":
             overflow-x: auto;
             scroll-snap-type: x mandatory;
             padding: 10px 4px 20px 4px;
-            -webkit-overflow-scrolling: touch;
-        }
-        .carousel-container::-webkit-scrollbar {
-            height: 6px;
-        }
-        .carousel-container::-webkit-scrollbar-thumb {
-            background: #0284C7;
-            border-radius: 10px;
         }
         .carousel-card {
             flex: 0 0 260px;
@@ -617,11 +590,6 @@ elif menu == "👤 Patient Portal & Photo Suite":
             color: #FFFFFF;
             text-align: center;
             box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-        .carousel-card:hover {
-            transform: translateY(-4px);
-            border-color: #38BDF8;
         }
         .card-icon { font-size: 2.2rem; margin-bottom: 8px; }
         .card-title { font-size: 1.1rem; font-weight: 800; color: #38BDF8; margin-bottom: 4px; }
@@ -647,12 +615,6 @@ elif menu == "👤 Patient Portal & Photo Suite":
                 <div class="card-title">Gait Symmetry Test</div>
                 <div class="card-desc">Balance Index: 92%</div>
                 <div class="card-badge">AI Verified</div>
-            </div>
-            <div class="carousel-card">
-                <div class="card-icon">🧘‍♂️</div>
-                <div class="card-title">Hamstring Stretch</div>
-                <div class="card-desc">Flexibility +18%</div>
-                <div class="card-badge">Completed</div>
             </div>
         </div>
         """
