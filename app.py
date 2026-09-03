@@ -1,15 +1,9 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import pandas as pd
 import random
-import datetime
-import re
-import uuid
-import time
-import base64
 
 # ==========================================
-# 0. GLOBAL PAGE CONFIG & CRISP LIGHT THEME
+# 0. GLOBAL CONFIG & POPPINS FONT
 # ==========================================
 
 st.set_page_config(
@@ -19,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize Session States
+# Session state initialization
 if "drawer_open" not in st.session_state:
     st.session_state["drawer_open"] = False
 
@@ -32,21 +26,21 @@ if "chat_messages" not in st.session_state:
         {"sender": "TS-P-001", "text": "Sure doctor, uploading right now."}
     ]
 
-# Background Dimming when Drawer is Open
+# RULE 4: DASHBOARD BEHAVIOR (DIMMING BACKGROUND WHEN DRAWER OPEN)
 drawer_dim_css = ""
 if st.session_state["drawer_open"]:
     drawer_dim_css = """
     .stApp > div:nth-child(2), [data-testid="stSidebar"] {
-        filter: blur(6px) brightness(0.7) !important;
+        filter: blur(6px) brightness(60%) !important;
         pointer-events: none !important;
         transition: all 0.3s ease-in-out !important;
     }
     """
 
-# COMPLETE LIGHT THEME & BULLETPROOF RADIO LABEL CSS
+# RULE 1, 2, 5: MEDICAL PREMIUM BLUE THEME & GLOBAL STYLING
 global_css = f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 #MainMenu {{ visibility: hidden !important; }}
 footer {{ visibility: hidden !important; }}
@@ -55,170 +49,157 @@ header[data-testid="stHeader"] {{ background-color: transparent !important; }}
 
 {drawer_dim_css}
 
+/* RULE 5: FONT & SPACING */
 html, body, [class*="css"] {{
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-family: 'Poppins', sans-serif !important;
 }}
 
-/* GLOBAL APP LIGHT BACKGROUND */
+/* RULE 2: LOGIN PAGE BACKGROUND GRADIENT */
 .stApp {{
-    background-color: #F8FAFC !important;
-    color: #0F172A !important;
+    background: linear-gradient(180deg, #F4F7F9 0%, #FFFFFF 100%) !important;
+    color: #1A1A1A !important;
 }}
 
-/* ALL INPUT FIELDS FORCE WHITE & CRISP DARK TEXT */
+/* HEADINGS & TEXT */
+h1, h2, h3 {{ color: #0A2342 !important; font-weight: 700 !important; font-family: 'Poppins', sans-serif !important; }}
+h4, h5, h6 {{ color: #00BFA6 !important; font-weight: 600 !important; font-family: 'Poppins', sans-serif !important; }}
+p, span, label {{ color: #1A1A1A !important; font-family: 'Poppins', sans-serif !important; }}
+
+.sub-text {{
+    color: #6C7A89 !important;
+    font-size: 0.9rem;
+}}
+
+/* RULE 2.4: INPUT FIELDS */
 div[data-baseweb="input"], 
 div[data-baseweb="base-input"],
-div[data-baseweb="input"] > div,
 input[data-testid="stTextInput"],
 input[type="text"],
 input[type="password"] {{
     background-color: #FFFFFF !important;
-    color: #0F172A !important;
-    border: 1.5px solid #64748B !important;
-    border-radius: 10px !important;
-    font-weight: 600 !important;
+    color: #1A1A1A !important;
+    border: 1.5px solid #D1D5DB !important;
+    border-radius: 12px !important;
+    font-weight: 500 !important;
+    padding: 6px 10px !important;
+    transition: all 0.3s ease-in-out !important;
 }}
 
-div[data-baseweb="input"] input {{
-    color: #0F172A !important;
-    background-color: #FFFFFF !important;
+div[data-baseweb="input"]:focus-within {{
+    border-color: #00BFA6 !important;
+    box-shadow: 0 0 0 3px rgba(0, 191, 166, 0.25) !important;
 }}
 
-/* STRICT OVERRIDE FOR RADIO BUTTON LABELS (MAIN CONTENT & SIDEBAR) */
-div[data-testid="stRadio"] label,
+/* RULE 1 & 3: RADIO BUTTONS - NO RED/BLACK DOTS. ACTIVE = TEAL (#00BFA6), INACTIVE = #E0E0E0 */
 div[data-testid="stRadio"] label p,
-div[data-testid="stRadio"] label span,
-div[role="radiogroup"] label,
-div[role="radiogroup"] label p,
-div[role="radiogroup"] label span,
-[data-testid="stSidebar"] div[data-testid="stRadio"] label p,
-[data-testid="stSidebar"] div[data-testid="stRadio"] label span {{
-    color: #0F172A !important;
-    font-weight: 800 !important;
-    font-size: 0.98rem !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+div[role="radiogroup"] label p {{
+    color: #1A1A1A !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
 }}
 
-/* RADIO BUTTON CIRCLE ACCENTS */
 div[data-baseweb="radio"] > div:first-child {{
-    border-color: #0284C7 !important;
+    border-color: #E0E0E0 !important;
     background-color: #FFFFFF !important;
 }}
 
-/* HEADINGS & LABELS */
-h1, h2, h3 {{ color: #1E3A8A !important; font-weight: 800 !important; }}
-h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
-
-div[data-testid="stWidgetLabel"] p, 
-label[data-testid="stWidgetLabel"] p {{
-    color: #0F172A !important;
-    font-weight: 800 !important;
+div[data-baseweb="radio"][aria-checked="true"] > div:first-child {{
+    border-color: #00BFA6 !important;
+    background-color: #00BFA6 !important;
 }}
 
-/* BUTTON STYLING */
+div[data-baseweb="radio"] div div {{
+    background-color: #FFFFFF !important;
+}}
+
+/* RULE 2.5: BUTTON STYLING */
 div.stButton > button {{
-    background: linear-gradient(135deg, #0284C7 0%, #1E3A8A 100%) !important;
+    background: linear-gradient(135deg, #0A2342 0%, #1E90FF 100%) !important;
     border: none !important;
-    border-radius: 10px !important;
-    padding: 10px 22px !important;
+    border-radius: 12px !important;
+    padding: 12px 26px !important;
     color: #FFFFFF !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25) !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    box-shadow: 0 4px 14px rgba(10, 35, 66, 0.2) !important;
+    transition: all 0.3s ease !important;
 }}
 
 div.stButton > button:hover {{
-    background: linear-gradient(135deg, #0369A1 0%, #1D4ED8 100%) !important;
-    transform: translateY(-1px) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 191, 166, 0.3) !important;
 }}
 
-/* SIDEBAR LIGHT STYLE & ALL TEXT VISIBILITY */
+/* RULE 2.6: LEFT SIDEBAR */
 [data-testid="stSidebar"] {{
-    background-color: #FFFFFF !important;
-    border-right: 1px solid #E2E8F0 !important;
+    background-color: #0A2342 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
 }}
 
 [data-testid="stSidebar"] * {{
-    color: #0F172A !important;
+    color: #FFFFFF !important;
 }}
 
-/* TOP LIGHT BRAND CARD */
-.brand-container {{
-    padding: 18px 16px;
-    background: linear-gradient(135deg, #EFF6FF 0%, #E0F2FE 100%) !important;
-    border: 1.5px solid #BAE6FD !important;
+[data-testid="stSidebar"] div[data-testid="stRadio"] label {{
+    padding: 10px 14px;
+    border-radius: 12px;
+    transition: background 0.2s ease-in-out;
+    margin-bottom: 4px;
+}}
+
+[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) {{
+    background-color: #00BFA6 !important;
+}}
+
+[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) p {{
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+}}
+
+/* RULE 2.2: WHITE CARD CONTAINER */
+.white-card {{
+    background: #FFFFFF;
     border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(10, 35, 66, 0.1);
+    border: 1px solid #F0F4F8;
     margin-bottom: 20px;
+}}
+
+/* RULE 2.3: TAB OVERRIDES */
+button[data-baseweb="tab"] {{
+    color: #6C7A89 !important;
+    font-weight: 600 !important;
+}}
+
+button[aria-selected="true"] {{
+    color: #0A2342 !important;
+    border-bottom-color: #00BFA6 !important;
+    border-bottom-width: 3px !important;
+}}
+
+/* BRAND HEADER CARD */
+.brand-container {{
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    margin-bottom: 24px;
     text-align: center;
 }}
-.brand-title {{
-    color: #1E3A8A !important;
-    font-size: 1.45rem !important;
-    font-weight: 800 !important;
-}}
-.brand-sub {{
-    color: #0284C7 !important;
-    font-size: 0.72rem !important;
-    font-weight: 800 !important;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-}}
 
-/* USER SESSION CARD */
-.user-info-card {{
-    background: #F1F5F9;
-    border: 1px solid #CBD5E1;
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 20px;
-}}
-
-/* LIGHT THEME VERTICAL DASHBOARD OVERLAY */
+/* RULE 4: VERTICAL DRAWER OVERLAY */
 .vertical-drawer-overlay {{
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: #F8FAFC;
+    background: #FFFFFF;
     z-index: 999999;
     overflow-y: auto;
-    padding: 30px;
+    padding: 32px;
     box-sizing: border-box;
-}}
-
-.drawer-card-light {{
-    background: #FFFFFF;
-    border: 1.5px solid #E2E8F0;
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-}}
-
-.drawer-header-banner {{
-    background: linear-gradient(135deg, #0284C7 0%, #1E3A8A 100%);
-    color: #FFFFFF !important;
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 24px;
-    box-shadow: 0 8px 24px rgba(2, 132, 199, 0.2);
-}}
-
-.drawer-header-banner * {{
-    color: #FFFFFF !important;
-}}
-
-/* TOP RIGHT PROFILE HEADER CARD */
-.top-profile-badge {{
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #FFFFFF;
-    border: 1px solid #CBD5E1;
-    padding: 6px 16px;
-    border-radius: 40px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }}
 </style>
 """
@@ -226,7 +207,7 @@ st.markdown(global_css, unsafe_allow_html=True)
 
 
 # ==========================================
-# 1. DATABASE & USER SESSION
+# 1. DATABASE & SESSION STATE
 # ==========================================
 
 if "users_db" not in st.session_state:
@@ -250,7 +231,7 @@ if "authenticated_user" not in st.session_state:
 
 
 # ==========================================
-# 2. TOP HEADER & NAVIGATION BAR
+# 2. TOP HEADER BAR
 # ==========================================
 
 def render_top_header():
@@ -264,11 +245,11 @@ def render_top_header():
     with c_right:
         st.markdown(f"""
         <div style="display:flex; justify-content:flex-end;">
-            <div class="top-profile-badge">
-                <span style="font-size:1.5rem;">👤</span>
-                <div style="text-align:left;">
-                    <div style="font-weight:800; color:#1E3A8A; font-size:0.88rem; line-height:1.1;">{u['name']}</div>
-                    <div style="color:#0284C7; font-size:0.75rem; font-weight:700;">{u['role'].upper()} | {u['proxy_id']}</div>
+            <div style="background:#FFFFFF; border:1px solid #E0E0E0; padding:8px 20px; border-radius:40px; box-shadow:0 4px 12px rgba(10,35,66,0.06); display:flex; align-items:center; gap:12px;">
+                <span style="font-size:1.4rem;">👤</span>
+                <div>
+                    <div style="font-weight:700; color:#0A2342; font-size:0.9rem; line-height:1.1;">{u['name']}</div>
+                    <div style="color:#00BFA6; font-size:0.75rem; font-weight:600;">{u['role'].upper()} | {u['proxy_id']}</div>
                 </div>
             </div>
         </div>
@@ -276,7 +257,7 @@ def render_top_header():
 
 
 # ==========================================
-# 3. LIGHT-THEMED WORKING VERTICAL DRAWER
+# 3. RULE 4: VERTICAL DRAWER DASHBOARD
 # ==========================================
 
 if st.session_state["drawer_open"]:
@@ -288,10 +269,10 @@ if st.session_state["drawer_open"]:
     c_dh1, c_dh2 = st.columns([4, 1])
     with c_dh1:
         st.markdown(f"""
-        <div class="drawer-header-banner">
-            <div style="font-size:0.85rem; text-transform:uppercase; font-weight:800; letter-spacing:1px; opacity:0.9;">Clinical Control Center</div>
-            <div style="font-size:1.8rem; font-weight:800; margin-top:4px;">Welcome, {u_name}</div>
-            <div style="font-size:0.95rem; margin-top:6px; opacity:0.95; font-weight:600;">
+        <div style="background: linear-gradient(135deg, #0A2342 0%, #1E90FF 100%); color:#FFFFFF; border-radius:16px; padding:28px; margin-bottom:24px; box-shadow: 0 8px 24px rgba(10,35,66,0.2);">
+            <div style="font-size:0.85rem; text-transform:uppercase; font-weight:700; letter-spacing:1px; color:#00BFA6;">Clinical Control Center</div>
+            <div style="font-size:2rem; font-weight:700; margin-top:4px; color:#FFFFFF;">Welcome, {u_name}</div>
+            <div style="font-size:0.95rem; margin-top:6px; color:#E0E0E0;">
                 🟢 Active Session | Role: {u_role} | 📑 2 Tele-Rehab Tasks Pending
             </div>
         </div>
@@ -306,9 +287,9 @@ if st.session_state["drawer_open"]:
     
     with col_a1:
         st.markdown("""
-        <div class="drawer-card-light">
+        <div class="white-card">
             <h4 style="margin-top:0;">📹 Live Tele-Call</h4>
-            <p style="font-size:0.88rem; color:#64748B;">Launch real-time video consultation with AI motion tracking.</p>
+            <p class="sub-text">Launch real-time video consultation with AI motion tracking.</p>
         </div>
         """, unsafe_allow_html=True)
         if st.button("▶️ Launch Video Call Now", key="dw_action_call"):
@@ -318,19 +299,19 @@ if st.session_state["drawer_open"]:
 
     with col_a2:
         st.markdown("""
-        <div class="drawer-card-light">
+        <div class="white-card">
             <h4 style="margin-top:0;">📅 Book Appointment</h4>
-            <p style="font-size:0.88rem; color:#64748B;">Schedule next physical therapy or evaluation slot.</p>
+            <p class="sub-text">Schedule next physical therapy or evaluation slot.</p>
         </div>
         """, unsafe_allow_html=True)
         if st.button("📆 Schedule Slot", key="dw_action_book"):
-            st.success("Appointment booking drawer slot reserved!")
+            st.success("Appointment slot reserved successfully!")
 
     with col_a3:
         st.markdown("""
-        <div class="drawer-card-light">
+        <div class="white-card">
             <h4 style="margin-top:0;">📊 AI Insights</h4>
-            <p style="font-size:0.88rem; color:#64748B;">View knee/shoulder flexion angles and recovery stats.</p>
+            <p class="sub-text">View knee/shoulder flexion angles and recovery stats.</p>
         </div>
         """, unsafe_allow_html=True)
         if st.button("📈 View Recovery Metrics", key="dw_action_insights"):
@@ -346,18 +327,18 @@ if st.session_state["drawer_open"]:
 
 st.sidebar.markdown("""
 <div class="brand-container">
-    <div style="font-size:1.6rem; font-weight:800; color:#1E3A8A;">🩺 TeleSynapse</div>
-    <div class="brand-sub">Clinical Tele-Rehab Portal</div>
+    <div style="font-size:1.6rem; font-weight:700; color:#FFFFFF;">🩺 TeleSynapse</div>
+    <div style="font-size:0.75rem; color:#00BFA6; font-weight:600; text-transform:uppercase; letter-spacing:1.5px; margin-top:4px;">Medical Tele-Rehab</div>
 </div>
 """, unsafe_allow_html=True)
 
 curr_user = st.session_state["authenticated_user"]
 
 st.sidebar.markdown(f"""
-<div class="user-info-card">
-    <div style="font-size: 0.72rem; color: #64748B; font-weight: 800; text-transform: uppercase;">Active Session</div>
-    <div style="font-size: 0.98rem; color: #1E3A8A; font-weight: 800; margin-top:2px;">{curr_user['name']}</div>
-    <div style="font-size: 0.8rem; color: #0284C7; font-weight: 700; margin-top:2px;">Role: {curr_user['role'].upper()}</div>
+<div style="background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px; margin-bottom:20px;">
+    <div style="font-size: 0.72rem; color: #6C7A89; font-weight: 700; text-transform: uppercase;">Active User</div>
+    <div style="font-size: 0.98rem; color: #FFFFFF; font-weight: 700; margin-top:2px;">{curr_user['name']}</div>
+    <div style="font-size: 0.8rem; color: #00BFA6; font-weight: 600; margin-top:2px;">Role: {curr_user['role'].upper()}</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -374,7 +355,7 @@ render_top_header()
 
 
 # ==========================================
-# 5. MODULE 1: LOGIN & REGISTRATION
+# 5. RULE 2 & 3: LOGIN PAGE + SWIPER.JS CAROUSEL
 # ==========================================
 
 if menu == "🔐 Login & Quick Registration":
@@ -393,14 +374,127 @@ if menu == "🔐 Login & Quick Registration":
             st.rerun()
 
     st.markdown("---")
+
+    # RULE 3: LOGIN MODE SELECTOR WITH SWIPER.JS V11 COVERFLOW & BLUR TRANSITION
+    st.markdown("#### 🎯 Select Login Profile (*Swipe / Centered Coverflow*)")
+
+    swiper_login_html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+        <style>
+            body { margin: 0; background: transparent; font-family: 'Poppins', sans-serif; }
+            .swiper { width: 100%; padding: 20px 0 45px 0; }
+            .swiper-slide {
+                background: #FFFFFF;
+                border-radius: 16px;
+                padding: 20px;
+                text-align: center;
+                box-shadow: 0 8px 24px rgba(10,35,66,0.1);
+                transition: all 500ms ease-in-out !important;
+                filter: blur(6px);
+                opacity: 0.5;
+                transform: scale(0.9);
+                border: 2px solid #E0E0E0;
+                box-sizing: border-box;
+                cursor: pointer;
+            }
+            .swiper-slide-active {
+                filter: blur(0px) !important;
+                opacity: 1 !important;
+                transform: scale(1.0) !important;
+                border-color: #00BFA6 !important;
+            }
+            .swiper-pagination-bullet {
+                background: #E0E0E0 !important;
+                opacity: 1 !important;
+                width: 10px;
+                height: 10px;
+                transition: all 0.3s ease;
+            }
+            .swiper-pagination-bullet-active {
+                background: #00BFA6 !important;
+                width: 26px !important;
+                border-radius: 10px !important;
+            }
+            .role-badge {
+                display: inline-block;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 0.75rem;
+                font-weight: 700;
+                color: #FFFFFF;
+                background: #0A2342;
+                margin-bottom: 8px;
+            }
+            .role-title { font-weight: 700; color: #0A2342; font-size: 1.1rem; margin-bottom: 4px; }
+            .role-desc { font-size: 0.82rem; color: #6C7A89; }
+        </style>
+    </head>
+    <body>
+        <div class="swiper mySwiper">
+            <div class="swiper-wrapper">
+                <div class="swiper-slide">
+                    <div class="role-badge" style="background:#00BFA6;">PATIENT</div>
+                    <div style="font-size: 2.2rem; margin: 4px 0;">👨‍💼</div>
+                    <div class="role-title">Patient Portal</div>
+                    <div class="role-desc">Access personal rehab plans, upload photos & join call</div>
+                </div>
+                <div class="swiper-slide">
+                    <div class="role-badge">DOCTOR</div>
+                    <div style="font-size: 2.2rem; margin: 4px 0;">👩‍⚕️</div>
+                    <div class="role-title">Clinical Doctor Suite</div>
+                    <div class="role-desc">Monitor joint angles, review uploads & conduct sessions</div>
+                </div>
+                <div class="swiper-slide">
+                    <div class="role-badge" style="background:#0A2342;">SUPER ADMIN</div>
+                    <div style="font-size: 2.2rem; margin: 4px 0;">👑</div>
+                    <div class="role-title">System Admin</div>
+                    <div class="role-desc">Manage system parameters & encrypted data enclaves</div>
+                </div>
+            </div>
+            <div class="swiper-pagination"></div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+        <script>
+            const swiper = new Swiper('.mySwiper', {
+                effect: 'coverflow',
+                grabCursor: true,
+                centeredSlides: true,
+                slidesPerView: 1.2,
+                spaceBetween: 20,
+                coverflowEffect: {
+                    rotate: 0,
+                    stretch: 0,
+                    depth: 80,
+                    modifier: 1,
+                    slideShadows: false,
+                },
+                speed: 500,
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+            });
+        </script>
+    </body>
+    </html>
+    """
+    components.html(swiper_login_html, height=230)
+
+    # LOGIN / REGISTRATION TABS
     tab_login, tab_reg = st.tabs(["🔑 Sign In", "📝 Register New Account"])
 
     with tab_login:
+        st.markdown('<div class="white-card">', unsafe_allow_html=True)
         role_select = st.radio("Select Login Mode:", ["Patient", "Doctor", "Super Admin"], horizontal=True)
         login_email = st.text_input("Email Address", value="patient@demo.com" if role_select == "Patient" else ("doctor@demo.com" if role_select == "Doctor" else "admin@telerehab.com"))
         login_pass = st.text_input("Password", type="password", value="pass123" if role_select != "Super Admin" else "admin123")
 
-        if st.button("SIGN IN TO PORTAL"):
+        if st.button("SIGN IN SECURELY"):
             user_entry = st.session_state["users_db"].get(login_email)
             if user_entry and user_entry["password_hash"] == login_pass:
                 st.session_state["authenticated_user"] = user_entry
@@ -408,8 +502,10 @@ if menu == "🔐 Login & Quick Registration":
                 st.rerun()
             else:
                 st.error("Invalid Email or Password.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
     with tab_reg:
+        st.markdown('<div class="white-card">', unsafe_allow_html=True)
         r_role = st.selectbox("Registering as:", ["Patient", "Doctor"])
         r_name = st.text_input("Full Name")
         r_email = st.text_input("Email Address")
@@ -422,10 +518,11 @@ if menu == "🔐 Login & Quick Registration":
                     "name": r_name, "role": r_role.lower(), "password_hash": r_pass
                 }
                 st.success("🎉 Account Created Successfully! You can now sign in.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ==========================================
-# 6. MODULE 2: LIVE TELE-REHAB VIDEO CALL SUITE
+# 6. LIVE TELE-REHAB CALL SUITE
 # ==========================================
 
 elif menu == "📹 Live Tele-Rehab Call Suite" or st.session_state["active_call"]:
@@ -440,31 +537,31 @@ elif menu == "📹 Live Tele-Rehab Call Suite" or st.session_state["active_call"
         <html>
         <head>
             <style>
-                body { margin: 0; background-color: #0F172A; font-family: sans-serif; color: white; border-radius: 16px; overflow: hidden; }
-                .call-container { position: relative; width: 100%; height: 420px; background: #1E293B; display: flex; align-items: center; justify-content: center; }
+                body { margin: 0; background-color: #0A2342; font-family: sans-serif; color: white; border-radius: 16px; overflow: hidden; }
+                .call-container { position: relative; width: 100%; height: 420px; background: #0A2342; display: flex; align-items: center; justify-content: center; }
                 video { width: 100%; height: 100%; object-fit: cover; }
                 .hud-overlay {
                     position: absolute; top: 16px; left: 16px;
-                    background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px);
-                    padding: 10px 16px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.3);
+                    background: rgba(10, 35, 66, 0.85); backdrop-filter: blur(8px);
+                    padding: 10px 16px; border-radius: 12px; border: 1px solid #00BFA6;
                 }
                 .controls-bar {
                     position: absolute; bottom: 16px; display: flex; gap: 12px;
-                    background: rgba(15, 23, 42, 0.85); padding: 8px 16px; border-radius: 30px;
+                    background: rgba(10, 35, 66, 0.9); padding: 8px 16px; border-radius: 30px;
                 }
                 .btn {
-                    background: #334155; color: white; border: none; padding: 10px 16px;
+                    background: #1E90FF; color: white; border: none; padding: 10px 16px;
                     border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;
                 }
-                .btn-danger { background: #EF4444; }
-                .btn-active { background: #0284C7; }
+                .btn-danger { background: #D32F2F; }
+                .btn-active { background: #00BFA6; }
             </style>
         </head>
         <body>
             <div class="call-container">
                 <video id="webcam" autoplay playsinline muted></video>
                 <div class="hud-overlay">
-                    <div style="color: #38BDF8; font-weight: bold; font-size: 0.85rem;">🟢 LIVE REHAB MOTION TRACKER</div>
+                    <div style="color: #00BFA6; font-weight: bold; font-size: 0.85rem;">🟢 LIVE REHAB MOTION TRACKER</div>
                     <div style="font-size: 1.1rem; font-weight: 800; margin-top: 2px;">Knee Angle: <span id="angle">88.4°</span></div>
                 </div>
                 <div class="controls-bar">
@@ -483,7 +580,7 @@ elif menu == "📹 Live Tele-Rehab Call Suite" or st.session_state["active_call"
                         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                         video.srcObject = stream;
                     } catch (err) {
-                        console.log("Webcam access denied or unavailable", err);
+                        console.log("Webcam access denied", err);
                     }
                 }
                 startCamera();
@@ -506,9 +603,7 @@ elif menu == "📹 Live Tele-Rehab Call Suite" or st.session_state["active_call"
                     }
                 }
                 function endCall() {
-                    if (stream) {
-                        stream.getTracks().forEach(track => track.stop());
-                    }
+                    if (stream) stream.getTracks().forEach(t => t.stop());
                     video.srcObject = null;
                     alert("Call Ended Successfully.");
                 }
@@ -531,125 +626,129 @@ elif menu == "📹 Live Tele-Rehab Call Suite" or st.session_state["active_call"
 
 
 # ==========================================
-# 7. CAROUSEL WITH BLUR TRANSITION + SNAP SCROLL MODULE
+# 7. RULE 3: PATIENT PORTAL & SWIPER RECOVERY SLIDER
 # ==========================================
 
 elif menu == "👤 Patient Portal & Photo Suite":
     st.markdown("### 👤 Patient Clinical Progress Suite")
-    st.markdown("#### 🎯 Interactive Recovery Pose Gallery (*Blur Transition + Snap Scroll*)")
+    st.markdown("#### 🎯 Recovery Pose & Flexion Slider (*Swiper.js v11 Coverflow*)")
 
-    blur_carousel_html = """
+    swiper_gallery_html = """
     <!DOCTYPE html>
     <html>
     <head>
-    <style>
-        body { margin: 0; background: transparent; font-family: 'Plus Jakarta Sans', sans-serif; }
-        .carousel-wrapper {
-            position: relative;
-            width: 100%;
-            overflow: hidden;
-            padding: 10px 0;
-        }
-        .snap-carousel {
-            display: flex;
-            gap: 22px;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            scroll-behavior: smooth;
-            padding: 20px 10px;
-            -webkit-overflow-scrolling: touch;
-        }
-        .snap-carousel::-webkit-scrollbar {
-            height: 6px;
-        }
-        .snap-carousel::-webkit-scrollbar-thumb {
-            background: #0284C7;
-            border-radius: 10px;
-        }
-        .carousel-card {
-            flex: 0 0 280px;
-            scroll-snap-align: center;
-            background: #FFFFFF;
-            border: 2px solid #BAE6FD;
-            border-radius: 20px;
-            padding: 22px;
-            text-align: center;
-            box-shadow: 0 8px 20px rgba(2, 132, 199, 0.08);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            filter: blur(2.5px) opacity(0.7);
-            transform: scale(0.94);
-            cursor: pointer;
-        }
-        .carousel-card:hover, .carousel-card.active {
-            filter: blur(0px) opacity(1);
-            transform: scale(1.03);
-            border-color: #0284C7;
-            box-shadow: 0 12px 30px rgba(2, 132, 199, 0.22);
-        }
-        .card-tag {
-            background: linear-gradient(135deg, #0284C7, #1E3A8A);
-            color: #FFFFFF;
-            font-size: 0.72rem;
-            font-weight: 800;
-            padding: 4px 12px;
-            border-radius: 20px;
-            display: inline-block;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-        }
-        .card-icon { font-size: 2.5rem; margin-bottom: 8px; }
-        .card-title { font-size: 1.15rem; font-weight: 800; color: #1E3A8A; margin-bottom: 4px; }
-        .card-desc { font-size: 0.88rem; color: #475569; font-weight: 600; }
-        .card-stat { font-size: 1.5rem; font-weight: 800; color: #0284C7; margin: 10px 0 4px 0; }
-    </style>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+        <style>
+            body { margin: 0; background: transparent; font-family: 'Poppins', sans-serif; }
+            .swiper { width: 100%; padding: 20px 0 45px 0; }
+            .swiper-slide {
+                background: #FFFFFF;
+                border-radius: 16px;
+                padding: 24px;
+                text-align: center;
+                box-shadow: 0 8px 24px rgba(10,35,66,0.1);
+                transition: all 500ms ease-in-out !important;
+                filter: blur(6px);
+                opacity: 0.5;
+                transform: scale(0.9);
+                border: 2px solid #E0E0E0;
+                box-sizing: border-box;
+            }
+            .swiper-slide-active {
+                filter: blur(0px) !important;
+                opacity: 1 !important;
+                transform: scale(1.0) !important;
+                border-color: #00BFA6 !important;
+            }
+            .swiper-pagination-bullet {
+                background: #E0E0E0 !important;
+                opacity: 1 !important;
+                width: 10px;
+                height: 10px;
+            }
+            .swiper-pagination-bullet-active {
+                background: #00BFA6 !important;
+                width: 26px !important;
+                border-radius: 10px !important;
+            }
+            .card-tag {
+                background: #0A2342;
+                color: #FFFFFF;
+                font-size: 0.72rem;
+                font-weight: 700;
+                padding: 4px 12px;
+                border-radius: 20px;
+                display: inline-block;
+                margin-bottom: 10px;
+                text-transform: uppercase;
+            }
+            .card-stat { font-size: 1.5rem; font-weight: 700; color: #00BFA6; margin: 8px 0 4px 0; }
+            .card-title { font-size: 1.1rem; font-weight: 700; color: #0A2342; }
+            .card-desc { font-size: 0.85rem; color: #6C7A89; }
+        </style>
     </head>
     <body>
-    <div class="carousel-wrapper">
-        <div class="snap-carousel" id="carousel">
-            <div class="carousel-card active">
-                <div class="card-tag">ACL Week 2</div>
-                <div class="card-icon">🦵</div>
-                <div class="card-title">Knee Flexion Angle</div>
-                <div class="card-stat">88.5° / 90°</div>
-                <div class="card-desc">Target angle almost reached. Mobility +12%</div>
+        <div class="swiper gallerySwiper">
+            <div class="swiper-wrapper">
+                <div class="swiper-slide">
+                    <div class="card-tag" style="background:#00BFA6;">ACL Week 2</div>
+                    <div style="font-size: 2.5rem;">🦵</div>
+                    <div class="card-title">Knee Flexion Angle</div>
+                    <div class="card-stat">88.5° / 90°</div>
+                    <div class="card-desc">Target angle almost reached. Mobility +12%</div>
+                </div>
+                <div class="swiper-slide">
+                    <div class="card-tag">Active Therapy</div>
+                    <div style="font-size: 2.5rem;">🏋️‍♂️</div>
+                    <div class="card-title">Quadriceps Extension</div>
+                    <div class="card-stat">3 Sets x 15 Reps</div>
+                    <div class="card-desc">EMG Muscle activation score: 94%</div>
+                </div>
+                <div class="swiper-slide">
+                    <div class="card-tag" style="background:#00BFA6;">AI Gait Test</div>
+                    <div style="font-size: 2.5rem;">🏃‍♂️</div>
+                    <div class="card-title">Gait Symmetry</div>
+                    <div class="card-stat">92% Balance</div>
+                    <div class="card-desc">Zero lateral limp detected in walk cycle</div>
+                </div>
+                <div class="swiper-slide">
+                    <div class="card-tag">Rotator Cuff</div>
+                    <div style="font-size: 2.5rem;">💪</div>
+                    <div class="card-title">Shoulder Abduction</div>
+                    <div class="card-stat">110° Angle</div>
+                    <div class="card-desc">Full range overhead lift verified by AI</div>
+                </div>
             </div>
-            <div class="carousel-card">
-                <div class="card-tag">Active Therapy</div>
-                <div class="card-icon">🏋️‍♂️</div>
-                <div class="card-title">Quadriceps Extension</div>
-                <div class="card-stat">3 Sets x 15 Reps</div>
-                <div class="card-desc">EMG Muscle activation score: 94%</div>
-            </div>
-            <div class="carousel-card">
-                <div class="card-tag">AI Gait Test</div>
-                <div class="card-icon">🏃‍♂️</div>
-                <div class="card-title">Gait Symmetry</div>
-                <div class="card-stat">92% Balance</div>
-                <div class="card-desc">Zero lateral limp detected in walk cycle</div>
-            </div>
-            <div class="carousel-card">
-                <div class="card-tag">Rotator Cuff</div>
-                <div class="card-icon">💪</div>
-                <div class="card-title">Shoulder Abduction</div>
-                <div class="card-stat">110° Angle</div>
-                <div class="card-desc">Full range overhead lift verified by AI</div>
-            </div>
+            <div class="swiper-pagination"></div>
         </div>
-    </div>
 
-    <script>
-        const cards = document.querySelectorAll('.carousel-card');
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                cards.forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+        <script>
+            const gallerySwiper = new Swiper('.gallerySwiper', {
+                effect: 'coverflow',
+                grabCursor: true,
+                centeredSlides: true,
+                slidesPerView: 1.2,
+                spaceBetween: 20,
+                coverflowEffect: {
+                    rotate: 0,
+                    stretch: 0,
+                    depth: 80,
+                    modifier: 1,
+                    slideShadows: false,
+                },
+                speed: 500,
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
             });
-        });
-    </script>
+        </script>
     </body>
     </html>
     """
-    components.html(blur_carousel_html, height=270)
+    components.html(swiper_gallery_html, height=270)
 
     st.markdown("---")
     st.markdown("#### 💬 Encrypted Portal Chat")
@@ -658,7 +757,7 @@ elif menu == "👤 Patient Portal & Photo Suite":
 
 
 # ==========================================
-# 8. OTHER MODULES (SUPER ADMIN / DOCTOR / REPORT)
+# 8. OTHER PORTAL MODULES
 # ==========================================
 
 elif menu == "👑 Super Admin Portal (/admin/login)":
@@ -679,11 +778,11 @@ else:
 
 
 # ==========================================
-# 9. FOOTER POLICY
+# 9. FOOTER
 # ==========================================
 
 st.markdown("""
-<div style="text-align:center; color:#64748B; font-size:0.8rem; margin-top:40px; padding-top:16px; border-top:1px solid #CBD5E1;">
+<div style="text-align:center; color:#6C7A89; font-size:0.8rem; margin-top:40px; padding-top:16px; border-top:1px solid #E0E0E0;">
     TeleSynapse — Secured Clinical Architecture & Data Enclave
 </div>
 """, unsafe_allow_html=True)
