@@ -3,6 +3,8 @@ import pandas as pd
 import random
 import datetime
 import smtplib
+import base64
+import time
 from email.mime.text import MIMEText
 
 # --- 0. BULLETPROOF HTML CLEANER ENGINE ---
@@ -67,7 +69,7 @@ big_text = st.sidebar.toggle("🔍 Large Text Mode", value=False)
 base_font_size = "17px" if big_text else "15px"
 hero_title_size = "2.3rem" if big_text else "1.8rem"
 
-# --- 4. HIGH-CONTRAST COLOR SYSTEM & CSS ---
+# --- 4. HIGH-CONTRAST COLOR SYSTEM & GLOBAL CSS ---
 global_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -76,6 +78,7 @@ global_css = f"""
 footer {{ visibility: hidden !important; }}
 .stDeployButton {{ display: none !important; }}
 header[data-testid="stHeader"] {{ background-color: transparent !important; }}
+div[data-testid="stStatusWidget"] {{ display: none !important; }}
 
 html, body, [class*="css"] {{
     font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -167,6 +170,7 @@ p, span, label {{ color: #E5E7EB; }}
     padding: 12px 24px !important;
     font-size: 0.95rem !important;
     box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    width: 100%;
 }}
 .stButton>button:hover {{
     transform: translateY(-2px);
@@ -179,12 +183,33 @@ p, span, label {{ color: #E5E7EB; }}
     border-radius: 10px !important;
     border: 1px solid #334155 !important;
 }}
+
+.stat-card {{
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+}}
+.stat-val {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #34D399;
+}}
+.stat-lbl {{
+    font-size: 0.75rem;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+}}
 </style>
 """
 
 st.markdown(clean_html(global_css), unsafe_allow_html=True)
 
-# --- 5. SESSION STATE DATA ---
+# --- 5. INITIALIZE SESSION STATE ---
 if "appointments" not in st.session_state:
     st.session_state["appointments"] = [
         {
@@ -217,6 +242,15 @@ if "booking_step" not in st.session_state:
 
 if "show_proof_error" not in st.session_state:
     st.session_state["show_proof_error"] = False
+
+if "ghost_mode" not in st.session_state:
+    st.session_state["ghost_mode"] = True
+
+if "ai_session_running" not in st.session_state:
+    st.session_state["ai_session_running"] = True
+
+if "current_reps" not in st.session_state:
+    st.session_state["current_reps"] = 3
 
 DOCTORS_DATABASE = [
     {
@@ -437,7 +471,7 @@ if menu == "🩺 TeleSynapse 3-Step Secure Booking":
                 else:
                     st.error("Please fill in all required fields.")
 
-    # --- STEP 2: PAY TO DOCTOR & UPLOAD PROOF (WITH STRICT ALERT LOGIC) ---
+    # --- STEP 2: PAY TO DOCTOR & UPLOAD PROOF ---
     elif st.session_state["booking_step"] == "STEP_2_PAYMENT":
         temp = st.session_state["temp_booking"]
         doc = temp["DoctorObj"]
@@ -450,7 +484,6 @@ if menu == "🩺 TeleSynapse 3-Step Secure Booking":
         """
         st.markdown(clean_html(banner_html), unsafe_allow_html=True)
 
-        # Triggered Alert Box if user attempts submission without proof
         if st.session_state.get("show_proof_error", False):
             alert_modal_html = """
             <div style="background:#2A0808; border:2px solid #EF4444; border-radius:14px; padding:20px; margin-bottom:20px; font-family:'JetBrains Mono', monospace; text-align:center; box-shadow:0 10px 25px rgba(239,68,68,0.2);">
@@ -515,7 +548,6 @@ if menu == "🩺 TeleSynapse 3-Step Secure Booking":
             with c_btn2:
                 if st.button("I HAVE PAID - SUBMIT →"):
                     if uploaded_file is None:
-                        # Hard block - render error modal and remain on Step 2
                         st.session_state["show_proof_error"] = True
                         st.rerun()
                     else:
@@ -555,11 +587,8 @@ if menu == "🩺 TeleSynapse 3-Step Secure Booking":
     # --- STEP 3: STRICT VERIFICATION & SLIP UNLOCK SCREEN ---
     elif st.session_state["booking_step"] == "STEP_3_VERIFICATION":
         slip_num = st.session_state["current_slip_num"]
-        
-        # Always fetch fresh state from appointments database
         booking = next(a for a in st.session_state["appointments"] if a["SlipNo"] == slip_num)
 
-        # STATE A: PENDING VERIFICATION (NO SLIP PREVIEW AT ALL)
         if booking["Status"] == "PENDING VERIFICATION":
             pending_box = f"""
             <div style="background:#1E293B; border:2px dashed #F59E0B; border-radius:16px; padding:28px; max-width:550px; margin:20px auto; text-align:center;">
@@ -590,7 +619,6 @@ if menu == "🩺 TeleSynapse 3-Step Secure Booking":
             with c_dash:
                 st.info("💡 Open 'Clinician & Admin Dashboard' menu in sidebar to simulate Doctor Approving payment.")
 
-        # STATE B: APPROVED & PAID ✓ (OFFICIAL SLIP GENERATED)
         elif booking["Status"] == "PAID ✓":
             st.success("🎉 PAYMENT VERIFIED BY DOCTOR! OFFICIAL SLIP & JOIN LINK UNLOCKED.")
             render_official_paid_slip(booking)
@@ -605,7 +633,6 @@ if menu == "🩺 TeleSynapse 3-Step Secure Booking":
                 st.session_state["booking_step"] = "STEP_1_BOOK"
                 st.rerun()
 
-        # STATE C: REJECTED
         else:
             st.error(f"❌ PAYMENT REJECTED BY DOCTOR: {booking.get('RejectReason', 'Invalid Payment')}")
             if st.button("← Re-upload Screenshot"):
@@ -618,7 +645,6 @@ elif menu == "📊 Clinician & Admin Dashboard":
 
     tab_verify, tab_all = st.tabs(["💳 Payment Verification Queue", "📋 All Confirmed Patients"])
 
-    # TAB 1: DOCTOR PAYMENT QUEUE
     with tab_verify:
         st.markdown("#### Pending Payment Screenshot Requests")
         
@@ -659,18 +685,225 @@ elif menu == "📊 Clinician & Admin Dashboard":
                             st.error("Payment rejected.")
                             st.rerun()
 
-    # TAB 2: ALL RECORDS
     with tab_all:
         for app in reversed(st.session_state["appointments"]):
             if app["Status"] == "PAID ✓":
                 render_official_paid_slip(app)
                 st.markdown("---")
 
-# --- 10. OTHER MODULES ---
+# --- 10. MODULE 3: KINEMATIC MOTION AI SUITE ---
 elif menu == "📹 Kinematic Motion AI Suite":
-    st.markdown("<h3>📹 Kinematic Motion Analysis Engine</h3>", unsafe_allow_html=True)
-    st.info("Computer Vision Joint Tracking Pipeline initialized.")
+    
+    # --- HEADER & REAL-TIME STATUS BAR ---
+    status_bar_html = f"""
+    <div style="background:#1E293B; border:1px solid #334155; border-radius:14px; padding:14px 22px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <span style="color:#10B981; font-size:1.2rem; animation: pulse 1s infinite;">●</span>
+            <span style="color:#34D399; font-weight:800; font-size:1.1rem; letter-spacing:0.5px;">KINEMATIC MOTION ANALYSIS ENGINE</span>
+        </div>
+        <div style="display:flex; gap:18px; font-family:'JetBrains Mono', monospace; font-size:0.85rem; color:#94A3B8;">
+            <span>STATUS: <b style="color:#34D399;">LIVE CAMERA ON</b></span>
+            <span>GPU: <b style="color:#38BDF8;">ACTIVE (WebGL)</b></span>
+            <span>FPS: <b style="color:#F8FAFC;">30</b></span>
+            <span>GHOST MODE: <b style="color:{'#34D399' if st.session_state['ghost_mode'] else '#64748B'};">{'ENABLED' if st.session_state['ghost_mode'] else 'OFF'}</b></span>
+        </div>
+    </div>
+    """
+    st.markdown(clean_html(status_bar_html), unsafe_allow_html=True)
 
+    c_viz, c_side = st.columns([7, 5])
+
+    with c_viz:
+        st.markdown("#### 📷 AI Color Skeleton & Pain Heatmap Feed")
+
+        # HTML5 Canvas + MediaPipe GPU Simulation Visualizer Box
+        canvas_html = f"""
+        <div style="position:relative; width:100%; height:420px; background:#0F172A; border:2px solid #334155; border-radius:16px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,0.6);">
+            
+            <!-- Background Camera Feed Graphic -->
+            <div style="position:absolute; width:100%; height:100%; background:radial-gradient(circle, #1E293B 0%, #0B0F17 100%); display:flex; justify-content:center; align-items:center;">
+                <svg width="220" height="340" viewBox="0 0 200 320" style="opacity:0.25;">
+                    <circle cx="100" cy="40" r="22" fill="none" stroke="#64748B" stroke-width="4"/>
+                    <line x1="100" y1="62" x2="100" y2="170" stroke="#64748B" stroke-width="6"/>
+                    <line x1="100" y1="85" x2="50" y2="140" stroke="#64748B" stroke-width="5"/>
+                    <line x1="100" y1="85" x2="150" y2="140" stroke="#64748B" stroke-width="5"/>
+                    <line x1="100" y1="170" x2="60" y2="280" stroke="#64748B" stroke-width="5"/>
+                    <line x1="100" y1="170" x2="140" y2="280" stroke="#64748B" stroke-width="5"/>
+                </svg>
+            </div>
+
+            <!-- GHOST OVERLAY SILHOUETTE (BEFORE SESSION) -->
+            {'<svg width="100%" height="100%" style="position:absolute; top:0; left:0; opacity:0.35; filter:drop-shadow(0 0 8px #38BDF8);"><circle cx="50%" cy="80" r="20" fill="none" stroke="#38BDF8" stroke-width="3" stroke-dasharray="4"/><line x1="50%" y1="100" x2="50%" y2="200" stroke="#38BDF8" stroke-width="4" stroke-dasharray="4"/><line x1="50%" y1="200" x2="42%" y2="310" stroke="#38BDF8" stroke-width="4" stroke-dasharray="4"/><line x1="50%" y1="200" x2="58%" y2="310" stroke="#38BDF8" stroke-width="4" stroke-dasharray="4"/><text x="20" y="35" fill="#38BDF8" font-size="12" font-weight="bold">👻 GHOST OVERLAY: AUG 26 SESSION (110° MAX)</text></svg>' if st.session_state['ghost_mode'] else ''}
+
+            <!-- REAL-TIME AI COLOR SKELETON & HEATMAP OVERLAY -->
+            <svg width="100%" height="100%" style="position:absolute; top:0; left:0;">
+                <!-- Head & Torso Joints (Green = Normal ROM) -->
+                <circle cx="50%" cy="80" r="8" fill="#10B981"/>
+                <line x1="50%" y1="88" x2="50%" y2="190" stroke="#10B981" stroke-width="5"/>
+                
+                <!-- Shoulder & Arms (Green = Normal) -->
+                <circle cx="40%" cy="110" r="7" fill="#10B981"/>
+                <circle cx="60%" cy="110" r="7" fill="#10B981"/>
+                <line x1="50%" y1="110" x2="40%" y2="110" stroke="#10B981" stroke-width="4"/>
+                <line x1="50%" y1="110" x2="60%" y2="110" stroke="#10B981" stroke-width="4"/>
+                <line x1="40%" y1="110" x2="32%" y2="160" stroke="#10B981" stroke-width="4"/>
+                <line x1="60%" y1="110" x2="68%" y2="160" stroke="#10B981" stroke-width="4"/>
+                
+                <!-- Hips (Yellow = Stiff 50%) -->
+                <circle cx="45%" cy="190" r="8" fill="#F59E0B"/>
+                <circle cx="55%" cy="190" r="8" fill="#F59E0B"/>
+                <line x1="45%" y1="190" x2="55%" y2="190" stroke="#F59E0B" stroke-width="5"/>
+
+                <!-- Right Leg (Green = Good) -->
+                <line x1="55%" y1="190" x2="58%" y2="260" stroke="#10B981" stroke-width="4"/>
+                <circle cx="58%" cy="260" r="7" fill="#10B981"/>
+                <line x1="58%" y1="260" x2="60%" y2="330" stroke="#10B981" stroke-width="4"/>
+
+                <!-- Left Leg / Knee (RED PAIN HEATMAP AREA = LOW ROM) -->
+                <line x1="45%" y1="190" x2="38%" y2="255" stroke="#EF4444" stroke-width="5"/>
+                
+                <!-- PAIN HEATMAP GLOW -->
+                <circle cx="38%" cy="255" r="22" fill="#EF4444" opacity="0.35"/>
+                <circle cx="38%" cy="255" r="10" fill="#EF4444"/>
+                <text x="24%" y="260" fill="#EF4444" font-size="11" font-weight="bold" font-family="sans-serif">⚠️ PAIN HEATMAP (92°)</text>
+
+                <line x1="38%" y1="255" x2="35%" y2="330" stroke="#EF4444" stroke-width="4"/>
+            </svg>
+
+            <!-- LIVE FORM COACH VOICE / TEXT BANNER -->
+            <div style="position:absolute; bottom:14px; left:14px; right:14px; background:rgba(15, 23, 42, 0.9); border:1px solid #EF4444; border-radius:10px; padding:10px 14px; display:flex; align-items:center; gap:12px; backdrop-filter:blur(8px);">
+                <span style="font-size:1.4rem;">🔊</span>
+                <div>
+                    <div style="color:#EF4444; font-weight:800; font-size:0.8rem; letter-spacing:0.5px;">AI FORM COACH (LIVE VOICE & TEXT)</div>
+                    <div style="color:#F8FAFC; font-size:0.88rem; font-weight:600;">"Rep {st.session_state['current_reps']} of 10 — Left knee collapsing inward by 12°. Straighten joint!"</div>
+                </div>
+            </div>
+
+            <div style="position:absolute; top:14px; right:14px; background:#064E3B; border:1px solid #10B981; border-radius:8px; padding:6px 12px; color:#34D399; font-size:0.75rem; font-weight:800; font-family:'JetBrains Mono';">
+                ANGLE: 92.4° FLEXION
+            </div>
+        </div>
+        """
+        st.markdown(clean_html(canvas_html), unsafe_allow_html=True)
+
+        # BOTTOM ACTION CONTROL BUTTONS
+        st.markdown("<br>", unsafe_allow_html=True)
+        c_b1, c_b2, c_b3 = st.columns(3)
+        with c_b1:
+            if st.button("▶ START / RESUME SESSION"):
+                st.session_state["ai_session_running"] = True
+                st.toast("AI Kinematic Tracker Activated!")
+        with c_b2:
+            if st.button("👻 TOGGLE GHOST OVERLAY"):
+                st.session_state["ghost_mode"] = not st.session_state["ghost_mode"]
+                st.rerun()
+        with c_b3:
+            if st.button("➕ SIMULATE COMPLETED REP"):
+                st.session_state["current_reps"] = min(10, st.session_state["current_reps"] + 1)
+                st.rerun()
+
+    with c_side:
+        st.markdown("#### 📊 Real-Time Kinematic Metrics")
+
+        # LIVE METRICS HUD CARDS
+        c_m1, c_m2 = st.columns(2)
+        with c_m1:
+            st.markdown(clean_html(f"""
+            <div class="stat-card">
+                <div class="stat-val" style="color:#34D399;">{st.session_state['current_reps']}/10</div>
+                <div class="stat-lbl">REPETITIONS</div>
+            </div>
+            """), unsafe_allow_html=True)
+        with c_m2:
+            st.markdown(clean_html("""
+            <div class="stat-card">
+                <div class="stat-val" style="color:#38BDF8;">92.4°</div>
+                <div class="stat-lbl">PEAK FLEXION</div>
+            </div>
+            """), unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        c_m3, c_m4 = st.columns(2)
+        with c_m3:
+            st.markdown(clean_html("""
+            <div class="stat-card">
+                <div class="stat-val" style="color:#A78BFA;">B+</div>
+                <div class="stat-lbl">FORM SCORE (87%)</div>
+            </div>
+            """), unsafe_allow_html=True)
+        with c_m4:
+            st.markdown(clean_html("""
+            <div class="stat-card">
+                <div class="stat-val" style="color:#34D399;">+22%</div>
+                <div class="stat-lbl">ROM IMPROVEMENT</div>
+            </div>
+            """), unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("#### 🟢 Joint Health Status Breakdown")
+        
+        joint_status_html = """
+        <div style="background:#1E293B; border:1px solid #334155; border-radius:12px; padding:14px; font-size:0.85rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>🟢 Right Knee Extension:</span>
+                <b style="color:#34D399;">168° (Normal)</b>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>🟡 Lumbar Hip Flexion:</span>
+                <b style="color:#F59E0B;">110° (50% Stiff)</b>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>🔴 Left Knee Joint (Pain Area):</span>
+                <b style="color:#EF4444;">92° (Pain Threshold)</b>
+            </div>
+        </div>
+        """
+        st.markdown(clean_html(joint_status_html), unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # 1-CLICK CLINICAL REPORT GENERATOR
+        st.markdown("#### 📄 1-Click Clinical Doctor PDF")
+        
+        report_data = f"""
+        TELE-SYNAPSE CLINICAL KINEMATIC REPORT
+        ----------------------------------------------------
+        PATIENT: Muhammad Hassan Raza | AGE: 21 | GENDER: Male
+        ATTENDING DOCTOR: Dr. Ayesha Malik
+        SESSION DATE: {datetime.datetime.now().strftime('%d-%b-%Y')}
+        CONDITION: Lower Back Pain - Acute
+        ----------------------------------------------------
+        KINEMATIC METRICS SUMMARY:
+        - Completed Repetitions: {st.session_state['current_reps']}/10
+        - Peak Joint Flexion Angle: 92.4°
+        - Range of Motion Improvement: +22% vs Baseline
+        - Form Quality Grade: B+ (87%)
+        - Primary Restriction: Left Knee Inward Valgus (12°)
+        ----------------------------------------------------
+        CLINICAL RECOMMENDATION:
+        Continue quadriceps strengthening & lumbar mobilization 3x weekly.
+        Next evaluation scheduled for Fri, 05 Sep 2026.
+        """
+        
+        b64_report = base64.b64encode(report_data.encode()).decode()
+        href = f'<a href="data:file/txt;base64,{b64_report}" download="TeleSynapse_Kinematic_Report_HassanRaza.txt" style="display:block; text-align:center; background:linear-gradient(90deg, #10B981, #06B6D4); color:#0B0F17; font-weight:800; border-radius:12px; padding:12px; text-decoration:none; box-shadow:0 4px 15px rgba(16,185,129,0.3);">📄 GENERATE & DOWNLOAD CLINICAL REPORT PDF</a>'
+        st.markdown(href, unsafe_allow_html=True)
+
+# --- 11. MODULE 4: PATIENT MOBILITY PROGRESS ---
 else:
-    st.markdown("<h3>📈 Patient Mobility Progress</h3>", unsafe_allow_html=True)
-    st.line_chart(pd.DataFrame({"Flexion Angle": [60, 75, 88, 105]}, index=["W1", "W2", "W3", "W4"]))
+    st.markdown("<h3>📈 Patient Mobility Progress & Longitudinal Analytics</h3>", unsafe_allow_html=True)
+    
+    st.markdown("#### Joint Flexion Range of Motion (ROM) Over 4 Weeks")
+    rom_df = pd.DataFrame({
+        "Left Knee Flexion (°)": [60, 75, 88, 105],
+        "Lumbar Spine Angle (°)": [45, 55, 68, 80],
+        "Target Baseline (°)": [120, 120, 120, 120]
+    }, index=["Week 1", "Week 2", "Week 3", "Week 4"])
+
+    st.line_chart(rom_df)
+
+    c_p1, c_p2 = st.columns(2)
+    with c_p1:
+        st.info("🟢 **Mobility Trend:** Patient demonstrates a **+75% cumulative improvement** in left knee flexion since Week 1.")
+    with c_p2:
+        st.success("✔ **Adherence Rate:** 94% compliance with prescribed home exercise protocols.")
