@@ -39,7 +39,7 @@ if st.session_state["drawer_open"]:
     }
     """
 
-# Inject CSS Styling
+# Inject High-Contrast Medical UI Styling & Alert Text Fixes
 global_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -66,7 +66,21 @@ html, body, [class*="css"] {{
 h1, h2, h3 {{ color: #1E3A8A !important; font-weight: 800 !important; }}
 h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
 
-/* STREAMLIT SIDEBAR - HIGH CONTRAST */
+/* STREAMLIT ALERT & WARNING BOX TEXT FIX (SOLVES WASHED-OUT WHITE TEXT ON YELLOW) */
+[data-testid="stAlert"] {{
+    border-radius: 12px !important;
+    padding: 14px 18px !important;
+}}
+[data-testid="stAlert"] p, 
+[data-testid="stAlert"] div, 
+[data-testid="stAlert"] span,
+.stAlert p, .stAlert div {{
+    color: #0F172A !important;
+    font-weight: 700 !important;
+    font-size: 0.98rem !important;
+}}
+
+/* STREAMLIT SIDEBAR - HIGH CONTRAST GUARANTEE */
 [data-testid="stSidebar"] {{
     background-color: #FFFFFF !important;
     border-right: 1px solid #CBD5E1 !important;
@@ -98,11 +112,11 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     font-weight: 800 !important;
 }}
 
-/* PURE BLACK SLEEK BRANDING CONTAINER (AS REQUESTED) */
+/* PURE BLACK SLEEK BRANDING CONTAINER */
 .brand-container {{
-    padding: 22px 16px;
+    padding: 20px 16px;
     background: #0A0D14 !important; /* PURE OBSIDIAN BLACK */
-    border: 1px solid #1E293B;
+    border: 1px solid #1E293B !important;
     border-radius: 16px;
     margin-bottom: 20px;
     text-align: center;
@@ -116,12 +130,12 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
 }}
 .brand-title {{
     color: #FFFFFF !important;
-    font-size: 1.55rem;
+    font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -0.5px;
 }}
 .brand-sub {{
-    color: #38BDF8 !important; /* ELECTRIC CYAN THEME ACCENT */
+    color: #38BDF8 !important; /* ELECTRIC CYAN ACCENT */
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -155,6 +169,7 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid #0284C7;
+    background-color: #E2E8F0;
 }}
 
 /* CLINICAL CARDS */
@@ -202,7 +217,6 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     align-items: center;
     gap: 12px;
     font-size: 0.98rem;
-    cursor: pointer;
 }}
 
 .drawer-feed-card {{
@@ -271,27 +285,46 @@ st.markdown(global_css, unsafe_allow_html=True)
 
 
 # ==========================================
-# 1. AVATAR ASSETS & INITIAL DATABASE
+# 1. PROFESSIONAL CLINICAL AVATARS (SVG FALLBACKS)
 # ==========================================
 
-LADY_DOCTOR_AVATAR = "https://cdn-icons-png.flaticon.com/512/387/387561.png"
-MALE_PATIENT_AVATAR = "https://cdn-icons-png.flaticon.com/512/4140/4140048.png"
-ADMIN_AVATAR = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+# Professional Medical Doctor Coat Avatar (Inline SVG)
+DOCTOR_FALLBACK_SVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%231E3A8A'/><circle cx='50' cy='32' r='18' fill='%23E2E8F0'/><path d='M20 88 C 20 60, 80 60, 80 88 Z' fill='%23FFFFFF'/><path d='M42 50 L50 65 L58 50 L50 88 Z' fill='%230284C7'/><circle cx='50' cy='68' r='4' fill='%2338BDF8'/></svg>"
+
+# Professional Clean Patient Silhouette Avatar (Inline SVG)
+PATIENT_FALLBACK_SVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%230284C7'/><circle cx='50' cy='35' r='18' fill='%23FFFFFF'/><path d='M22 88 C 22 62, 78 62, 78 88 Z' fill='%23FFFFFF'/></svg>"
+
+
+def resolve_profile_avatar(user_dict: dict) -> str:
+    """Returns user uploaded photo if present, otherwise returns a clean professional clinical SVG."""
+    pic = user_dict.get("profile_pic")
+    if pic and isinstance(pic, str) and len(pic.strip()) > 0:
+        return pic
+    
+    # Fallback when no photo is uploaded by user
+    if user_dict.get("role") == "doctor":
+        return DOCTOR_FALLBACK_SVG
+    return PATIENT_FALLBACK_SVG
+
+
+# ==========================================
+# 2. INITIAL DATABASE & SESSION STATE
+# ==========================================
 
 if "users_db" not in st.session_state:
     st.session_state["users_db"] = {
         "admin@telerehab.com": {
             "user_id": "ADM-001", "proxy_id": "SUPER-ADMIN", "name": "Portal Super Admin",
-            "role": "super_admin", "status": "ACTIVE", "password_hash": "admin123", "profile_pic": ADMIN_AVATAR
+            "role": "super_admin", "status": "ACTIVE", "password_hash": "admin123", "profile_pic": ""
         },
         "patient@demo.com": {
             "user_id": "USR-P-101", "proxy_id": "TS-P-001", "name": "Muhammad Hassan Raza",
-            "role": "patient", "status": "ACTIVE", "password_hash": "pass123", "phone": "+92 309 7964195", "profile_pic": MALE_PATIENT_AVATAR
+            "role": "patient", "status": "ACTIVE", "password_hash": "pass123", "phone": "+92 309 7964195", "profile_pic": ""
         },
         "doctor@demo.com": {
             "user_id": "USR-D-909", "proxy_id": "TS-D-004", "name": "Dr. Ayesha Malik",
             "role": "doctor", "status": "ACTIVE", "phpc_num": "PHPC-88492-PAK", "specialty": "Orthopedic Specialist",
-            "password_hash": "pass123", "profile_pic": LADY_DOCTOR_AVATAR
+            "password_hash": "pass123", "profile_pic": ""
         }
     }
 
@@ -322,7 +355,7 @@ if "chat_messages" not in st.session_state:
 
 
 # ==========================================
-# 2. HELPER UTILITIES & LOADERS
+# 3. HELPER UTILITIES & LOADERS
 # ==========================================
 
 def render_loader_component(message="Securing Your Session..."):
@@ -335,7 +368,7 @@ def render_loader_component(message="Securing Your Session..."):
     """
     ph = st.empty()
     ph.markdown(loader_html, unsafe_allow_html=True)
-    time.sleep(1.2)
+    time.sleep(1.0)
     ph.empty()
 
 
@@ -348,11 +381,10 @@ def add_audit_log(actor_proxy: str, action: str, details: str):
 
 def render_top_right_profile_header():
     u = st.session_state["authenticated_user"]
-    pic = u.get("profile_pic", MALE_PATIENT_AVATAR)
+    pic = resolve_profile_avatar(u)
 
     c_left, c_right = st.columns([2.5, 1.5])
     with c_left:
-        # DRAWER TRIGGER BUTTON TOP LEFT
         if st.button("☰ Smart Drawer Dashboard", key="btn_open_drawer"):
             st.session_state["drawer_open"] = True
             st.rerun()
@@ -372,13 +404,12 @@ def render_top_right_profile_header():
 
 
 # ==========================================
-# 3. VERTICAL DASHBOARD DRAWER OVERLAY
+# 4. VERTICAL DASHBOARD DRAWER OVERLAY
 # ==========================================
 
 if st.session_state["drawer_open"]:
     u_name = st.session_state["authenticated_user"]["name"]
     
-    # Drawer Overlay Content
     st.markdown(f"""
     <div class="vertical-drawer-overlay">
         <!-- HEADER CLOSE BAR -->
@@ -438,7 +469,7 @@ if st.session_state["drawer_open"]:
 
 
 # ==========================================
-# 4. SIDEBAR NAVIGATION & BLACK BRANDING CARD
+# 5. SIDEBAR NAVIGATION & BLACK BRANDING CARD
 # ==========================================
 
 # Sleek Black Header Container
@@ -474,33 +505,14 @@ render_top_right_profile_header()
 
 
 # ==========================================
-# 5. MODULE 1: LOGIN & QUICK REGISTRATION
+# 6. MODULE 1: LOGIN & QUICK REGISTRATION
 # ==========================================
 
 if menu == "🔐 Login & Quick Registration":
     st.markdown("### 🔐 Multi-Role Authentication Gateway")
-    st.caption("Supports Direct Profile Picture Upload & Fast Presets")
+    st.caption("Select your role or sign in below:")
 
-    col_av1, col_av2 = st.columns(2)
-    with col_av1:
-        if st.button("👩‍⚕️ Preset: Lady Doctor (Dr. Ayesha)"):
-            st.session_state["preset_role"] = "Doctor"
-            st.session_state["preset_name"] = "Dr. Ayesha Malik"
-            st.session_state["preset_email"] = "doctor@demo.com"
-            st.session_state["preset_pic"] = LADY_DOCTOR_AVATAR
-            st.toast("Loaded Lady Doctor Preset!", icon="👩‍⚕️")
-
-    with col_av2:
-        if st.button("👨‍💼 Preset: Male Patient (Hassan Raza)"):
-            st.session_state["preset_role"] = "Patient"
-            st.session_state["preset_name"] = "Muhammad Hassan Raza"
-            st.session_state["preset_email"] = "patient@demo.com"
-            st.session_state["preset_pic"] = MALE_PATIENT_AVATAR
-            st.toast("Loaded Male Patient Preset!", icon="👨‍💼")
-
-    st.markdown("---")
-
-    tab_login, tab_reg = st.tabs(["🔑 Sign In", "📝 Register & Upload Photo"])
+    tab_login, tab_reg = st.tabs(["🔑 Sign In", "📝 Register New Account"])
 
     with tab_login:
         role_select = st.radio("Select Login Mode:", ["Patient", "Doctor", "Super Admin"], horizontal=True)
@@ -520,29 +532,40 @@ if menu == "🔐 Login & Quick Registration":
                 st.error("Invalid Email or Password.")
 
     with tab_reg:
-        r_name = st.text_input("Full Name", value=st.session_state.get("preset_name", ""))
-        r_email = st.text_input("Email Address", value=st.session_state.get("preset_email", ""))
-        r_pass = st.text_input("Create Password", type="password", value="pass123")
+        st.markdown("#### Account Registration")
+        r_role = st.selectbox("Registering as:", ["Patient", "Doctor"])
+        r_name = st.text_input("Full Name")
+        r_email = st.text_input("Email Address")
+        r_pass = st.text_input("Create Password", type="password")
         
-        uploaded_profile_file = st.file_uploader("Upload Profile Image", type=["jpg", "png", "jpeg"])
-        final_pic = MALE_PATIENT_AVATAR
+        st.markdown("##### 🖼️ Upload Profile Photo (Optional)")
+        st.caption("If no photo is uploaded, a professional clinical icon will be assigned automatically.")
+        uploaded_profile_file = st.file_uploader("Upload Profile Image (JPG/PNG)", type=["jpg", "png", "jpeg"])
+        
+        final_pic = ""
         if uploaded_profile_file:
             b64_str = base64.b64encode(uploaded_profile_file.getvalue()).decode()
             final_pic = f"data:image/jpeg;base64,{b64_str}"
 
         if st.button("CREATE ACCOUNT"):
-            render_loader_component("Registering...")
-            st.session_state["users_db"][r_email] = {
-                "user_id": f"USR-{random.randint(1000,9999)}",
-                "proxy_id": f"TS-P-{random.randint(100,999)}",
-                "name": r_name, "role": "patient", "status": "ACTIVE",
-                "password_hash": r_pass, "profile_pic": final_pic
-            }
-            st.success("🎉 Account Created!")
+            if r_email and r_name and r_pass:
+                render_loader_component("Registering Account...")
+                st.session_state["users_db"][r_email] = {
+                    "user_id": f"USR-{random.randint(1000,9999)}",
+                    "proxy_id": f"TS-P-{random.randint(100,999)}" if r_role == "Patient" else f"TS-D-{random.randint(100,999)}",
+                    "name": r_name, 
+                    "role": r_role.lower(), 
+                    "status": "ACTIVE",
+                    "password_hash": r_pass, 
+                    "profile_pic": final_pic
+                }
+                st.success("🎉 Account Created Successfully! You can now sign in.")
+            else:
+                st.error("Please fill in all required fields.")
 
 
 # ==========================================
-# 6. MODULE 2: SUPER ADMIN PORTAL
+# 7. MODULE 2: SUPER ADMIN PORTAL
 # ==========================================
 
 elif menu == "👑 Super Admin Portal (/admin/login)":
@@ -554,7 +577,7 @@ elif menu == "👑 Super Admin Portal (/admin/login)":
 
 
 # ==========================================
-# 7. MODULE 3: PATIENT PORTAL & SWIPER CAROUSEL
+# 8. MODULE 3: PATIENT PORTAL & REASONABLE CAROUSEL
 # ==========================================
 
 elif menu == "👤 Patient Portal & Photo Suite":
@@ -563,109 +586,77 @@ elif menu == "👤 Patient Portal & Photo Suite":
     else:
         st.markdown("### 👤 Patient Clinical Portal")
         
-        # HORIZONTAL BLUR SLIDE CAROUSEL (SWIPER.JS ENGINE INTEGRATION)
-        st.markdown("#### 🎯 Interactive Rehab Pose Gallery (Blur Slide Carousel)")
+        # SELF-CONTAINED HORIZONTAL SNAP CAROUSEL (GUARANTEED NO BLANK/DISAPPEARING IFRAME)
+        st.markdown("#### 🎯 Interactive Pose & Exercise Gallery")
         
         carousel_html = """
-        <!-- Swiper CSS -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-        
         <style>
-        body { margin: 0; background: transparent; font-family: sans-serif; }
-        .swiper { width: 100%; padding-top: 20px; padding-bottom: 40px; }
-        
-        .swiper-slide {
-            background-position: center;
-            background-size: cover;
-            width: 280px;
-            height: 220px;
+        body { margin: 0; padding: 0; background: transparent; font-family: sans-serif; }
+        .carousel-container {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding: 10px 4px 20px 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .carousel-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        .carousel-container::-webkit-scrollbar-thumb {
+            background: #0284C7;
+            border-radius: 10px;
+        }
+        .carousel-card {
+            flex: 0 0 260px;
+            scroll-snap-align: center;
             background: #0F172A;
             border: 2px solid #0284C7;
-            border-radius: 18px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            border-radius: 16px;
+            padding: 18px;
             color: #FFFFFF;
             text-align: center;
-            padding: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            
-            /* BLUR SLIDE CAROUSEL SPEC */
-            transition: all 0.5s ease-in-out !important;
-            filter: blur(6px) !important;
-            opacity: 0.5 !important;
-            transform: scale(0.88) !important;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease, border-color 0.3s ease;
         }
-
-        .swiper-slide-active {
-            filter: blur(0px) !important;
-            opacity: 1 !important;
-            transform: scale(1) !important;
-            border-color: #38BDF8 !important;
-            box-shadow: 0 12px 30px rgba(56, 189, 248, 0.3) !important;
+        .carousel-card:hover {
+            transform: translateY(-4px);
+            border-color: #38BDF8;
         }
-
-        .slide-title { font-size: 1.1rem; font-weight: 800; color: #38BDF8; margin-bottom: 6px; }
-        .slide-desc { font-size: 0.85rem; color: #94A3B8; font-weight: 600; }
-        .slide-badge { background: #0284C7; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; margin-top: 10px; }
+        .card-icon { font-size: 2.2rem; margin-bottom: 8px; }
+        .card-title { font-size: 1.1rem; font-weight: 800; color: #38BDF8; margin-bottom: 4px; }
+        .card-desc { font-size: 0.85rem; color: #94A3B8; font-weight: 600; }
+        .card-badge { background: #0284C7; padding: 4px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; margin-top: 10px; display: inline-block; }
         </style>
 
-        <div class="swiper mySwiper">
-            <div class="swiper-wrapper">
-                <div class="swiper-slide">
-                    <div style="font-size:2rem;">🦵</div>
-                    <div class="slide-title">Knee Flexion Angle</div>
-                    <div class="slide-desc">Target: 90° | Achieved: 85°</div>
-                    <div class="slide-badge">Week 1 Frame</div>
-                </div>
-                <div class="swiper-slide">
-                    <div style="font-size:2rem;">🏋️‍♂️</div>
-                    <div class="slide-title">Quadriceps Extension</div>
-                    <div class="slide-desc">15 Reps x 3 Sets</div>
-                    <div class="slide-badge">Active Rehab</div>
-                </div>
-                <div class="swiper-slide">
-                    <div style="font-size:2rem;">🏃‍♂️</div>
-                    <div class="slide-title">Gait Symmetry Test</div>
-                    <div class="slide-desc">Balance Index: 92%</div>
-                    <div class="slide-badge">AI Verified</div>
-                </div>
-                <div class="swiper-slide">
-                    <div style="font-size:2rem;">🧘‍♂️</div>
-                    <div class="slide-title">Hamstring Stretch</div>
-                    <div class="slide-desc">Flexibility +18%</div>
-                    <div class="slide-badge">Completed</div>
-                </div>
+        <div class="carousel-container">
+            <div class="carousel-card">
+                <div class="card-icon">🦵</div>
+                <div class="card-title">Knee Flexion Angle</div>
+                <div class="card-desc">Target: 90° | Achieved: 85°</div>
+                <div class="card-badge">Week 1 Frame</div>
             </div>
-            <div class="swiper-pagination"></div>
+            <div class="carousel-card">
+                <div class="card-icon">🏋️‍♂️</div>
+                <div class="card-title">Quadriceps Extension</div>
+                <div class="card-desc">15 Reps x 3 Sets</div>
+                <div class="card-badge">Active Rehab</div>
+            </div>
+            <div class="carousel-card">
+                <div class="card-icon">🏃‍♂️</div>
+                <div class="card-title">Gait Symmetry Test</div>
+                <div class="card-desc">Balance Index: 92%</div>
+                <div class="card-badge">AI Verified</div>
+            </div>
+            <div class="carousel-card">
+                <div class="card-icon">🧘‍♂️</div>
+                <div class="card-title">Hamstring Stretch</div>
+                <div class="card-desc">Flexibility +18%</div>
+                <div class="card-badge">Completed</div>
+            </div>
         </div>
-
-        <!-- Swiper JS -->
-        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></script>
-        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-        <script>
-        var swiper = new Swiper(".mySwiper", {
-            effect: "coverflow",
-            grabCursor: true,
-            centeredSlides: true,
-            slidesPerView: "auto",
-            coverflowEffect: {
-                rotate: 0,
-                stretch: 0,
-                depth: 100,
-                modifier: 1,
-                slideShadows: false,
-            },
-            loop: true,
-            pagination: {
-                el: ".swiper-pagination",
-                clickable: true,
-            },
-        });
-        </script>
         """
-        components.html(carousel_html, height=310)
+        components.html(carousel_html, height=220)
 
         st.markdown("---")
         st.markdown("#### 💬 Encrypted Portal Chat")
@@ -674,7 +665,7 @@ elif menu == "👤 Patient Portal & Photo Suite":
 
 
 # ==========================================
-# 8. MODULE 4 & 5: DOCTOR & REPORT BUILDER
+# 9. MODULE 4 & 5: DOCTOR & REPORT BUILDER
 # ==========================================
 
 elif menu == "👨‍⚕️ Doctor Dashboard & Gallery":
@@ -689,7 +680,7 @@ else:
 
 
 # ==========================================
-# 9. FOOTER POLICY
+# 10. FOOTER POLICY
 # ==========================================
 
 st.markdown("""
