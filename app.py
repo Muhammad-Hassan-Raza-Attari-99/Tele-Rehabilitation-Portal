@@ -39,7 +39,7 @@ if st.session_state["drawer_open"]:
     }
     """
 
-# Complete CSS Fixes to Eliminate White-on-White and Black-on-Black Invisible Text
+# Complete Precision CSS Override
 global_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -56,14 +56,16 @@ html, body, [class*="css"] {{
     font-size: {base_font} !important;
 }}
 
-/* GLOBAL LIGHT BACKGROUND */
+/* GLOBAL APP LIGHT BACKGROUND */
 .stApp {{
     background-color: #F8FAFC !important;
     color: #0F172A !important;
 }}
 
-/* FORCE MAIN AREA TEXT TO BE 100% VISIBLE DARK NAVY */
-.stApp p, .stApp span, .stApp label, .stApp div[data-testid="stMarkdownContainer"] p {{
+/* MAIN CONTAINER TEXT STYLING */
+[data-testid="stMainBlockContainer"] p,
+[data-testid="stMainBlockContainer"] span,
+[data-testid="stMainBlockContainer"] div[data-testid="stMarkdownContainer"] p {{
     color: #0F172A !important;
     font-weight: 600;
 }}
@@ -71,23 +73,17 @@ html, body, [class*="css"] {{
 h1, h2, h3 {{ color: #1E3A8A !important; font-weight: 800 !important; }}
 h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
 
-/* FIX INPUT FIELD LABELS & RADIO TEXT (SOLVES WHITE-ON-WHITE INVISIBLE LABELS) */
+/* FORM & INPUT FIELD LABELS */
 div[data-testid="stWidgetLabel"] p, 
 label[data-testid="stWidgetLabel"] p,
-[data-testid="stWidgetLabel"] span {{
+[data-testid="stWidgetLabel"] span,
+div[data-testid="stRadio"] label p {{
     color: #0F172A !important;
     font-weight: 700 !important;
     font-size: 0.95rem !important;
 }}
 
-div[data-testid="stRadio"] label p, 
-div[data-testid="stRadio"] span {{
-    color: #0F172A !important;
-    font-weight: 700 !important;
-    font-size: 0.95rem !important;
-}}
-
-/* FIX TAB TEXT COLOR */
+/* TAB TEXT COLOR */
 button[data-baseweb="tab"] p, 
 button[data-baseweb="tab"] span {{
     color: #1E3A8A !important;
@@ -95,7 +91,7 @@ button[data-baseweb="tab"] span {{
     font-size: 1rem !important;
 }}
 
-/* FIX INPUT FIELDS BACKGROUND & TEXT */
+/* INPUT FIELDS BACKGROUND & TEXT */
 div[data-baseweb="input"] {{
     background-color: #FFFFFF !important;
     border: 1.5px solid #CBD5E1 !important;
@@ -108,14 +104,29 @@ div[data-baseweb="input"] input {{
     font-weight: 600 !important;
 }}
 
-/* STREAMLIT ALERT BOX FIX */
-[data-testid="stAlert"] {{
-    border-radius: 12px !important;
-    padding: 14px 18px !important;
+/* STREAMLIT BUTTON OVERRIDE (FORCES ALL INNER TEXT TO PURE WHITE) */
+div.stButton > button {{
+    background: linear-gradient(135deg, #0284C7 0%, #1E3A8A 100%) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 10px 22px !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
+    transition: all 0.2s ease-in-out !important;
 }}
-[data-testid="stAlert"] p, [data-testid="stAlert"] div {{
-    color: #0F172A !important;
+
+div.stButton > button,
+div.stButton > button p,
+div.stButton > button span,
+div.stButton > button div {{
+    color: #FFFFFF !important;
     font-weight: 700 !important;
+    font-size: 0.95rem !important;
+}}
+
+div.stButton > button:hover {{
+    background: linear-gradient(135deg, #0369A1 0%, #1D4ED8 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45) !important;
 }}
 
 /* STREAMLIT SIDEBAR */
@@ -131,15 +142,15 @@ div[data-baseweb="input"] input {{
     font-weight: 600 !important;
 }}
 
-/* PURE BLACK SIDEBAR BRANDING CONTAINER (TEXT HIGH-CONTRAST FIX) */
+/* OBSIDIAN BLACK SIDEBAR BRANDING CARD */
 .brand-container {{
     padding: 20px 16px;
-    background-color: #0A0D14 !important; /* PURE OBSIDIAN BLACK */
+    background-color: #090D16 !important;
     border: 1px solid #1E293B !important;
     border-radius: 16px;
     margin-bottom: 20px;
     text-align: center;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
 }}
 .brand-title-wrap {{
     display: flex;
@@ -148,15 +159,15 @@ div[data-baseweb="input"] input {{
     gap: 10px;
 }}
 .brand-title {{
-    color: #FFFFFF !important; /* CRISP WHITE TITLE */
-    font-size: 1.5rem !important;
+    color: #FFFFFF !important;
+    font-size: 1.45rem !important;
     font-weight: 800 !important;
     letter-spacing: -0.5px;
 }}
 .brand-sub {{
-    color: #38BDF8 !important; /* ELECTRIC CYAN SUBTITLE */
+    color: #38BDF8 !important;
     font-size: 0.72rem !important;
-    font-weight: 700 !important;
+    font-weight: 800 !important;
     text-transform: uppercase;
     letter-spacing: 1.8px;
     margin-top: 6px;
@@ -183,8 +194,8 @@ div[data-baseweb="input"] input {{
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }}
 .profile-avatar-img {{
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid #0284C7;
@@ -248,16 +259,7 @@ div[data-baseweb="input"] input {{
     border-radius: 12px;
 }}
 
-.stButton>button {{
-    background: linear-gradient(90deg, #1E3A8A 0%, #0284C7 100%) !important;
-    color: #FFFFFF !important;
-    font-weight: 700 !important;
-    border-radius: 10px !important;
-    border: none !important;
-    padding: 10px 22px !important;
-}}
-
-/* FULLSCREEN LOADER OVERLAY */
+/* LOADER OVERLAY */
 .loader-overlay {{
     position: fixed;
     top: 0;
@@ -294,7 +296,7 @@ st.markdown(global_css, unsafe_allow_html=True)
 
 
 # ==========================================
-# 1. PROFESSIONAL CLINICAL AVATARS (SVG FALLBACKS)
+# 1. PROFESSIONAL CLINICAL AVATARS
 # ==========================================
 
 DOCTOR_FALLBACK_SVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%231E3A8A'/><circle cx='50' cy='32' r='18' fill='%23E2E8F0'/><path d='M20 88 C 20 60, 80 60, 80 88 Z' fill='%23FFFFFF'/><path d='M42 50 L50 65 L58 50 L50 88 Z' fill='%230284C7'/><circle cx='50' cy='68' r='4' fill='%2338BDF8'/></svg>"
@@ -302,11 +304,9 @@ PATIENT_FALLBACK_SVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/20
 
 
 def resolve_profile_avatar(user_dict: dict) -> str:
-    """Returns user uploaded photo if present, otherwise returns a clean professional clinical SVG."""
     pic = user_dict.get("profile_pic")
     if pic and isinstance(pic, str) and len(pic.strip()) > 0:
         return pic
-    
     if user_dict.get("role") == "doctor":
         return DOCTOR_FALLBACK_SVG
     return PATIENT_FALLBACK_SVG
@@ -357,7 +357,7 @@ def render_loader_component(message="Securing Your Session..."):
     """
     ph = st.empty()
     ph.markdown(loader_html, unsafe_allow_html=True)
-    time.sleep(1.0)
+    time.sleep(0.8)
     ph.empty()
 
 
@@ -485,12 +485,12 @@ if menu == "🔐 Login & Quick Registration":
     
     col_p1, col_p2 = st.columns(2)
     with col_p1:
-        if st.button("👩‍⚕️ Load Preset: Doctor (Dr. Ayesha)"):
+        if st.button("👩‍⚕️ Preset: Lady Doctor (Dr. Ayesha)"):
             st.session_state["authenticated_user"] = st.session_state["users_db"]["doctor@demo.com"]
             st.success("Loaded Doctor Account!")
             st.rerun()
     with col_p2:
-        if st.button("👨‍💼 Load Preset: Patient (Hassan Raza)"):
+        if st.button("👨‍💼 Preset: Male Patient (Hassan Raza)"):
             st.session_state["authenticated_user"] = st.session_state["users_db"]["patient@demo.com"]
             st.success("Loaded Patient Account!")
             st.rerun()
