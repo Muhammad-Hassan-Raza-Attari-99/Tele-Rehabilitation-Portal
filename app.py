@@ -22,10 +22,24 @@ st.set_page_config(
 # Accessibility Mode Toggle
 st.sidebar.markdown("### ♿ Accessibility Mode")
 big_text = st.sidebar.toggle("🔍 Large Text Mode", value=False)
-
 base_font = "17px" if big_text else "15px"
 
-# Inject International Grade Medical White & Blue High-Contrast Styling
+# Drawer Session State Trigger
+if "drawer_open" not in st.session_state:
+    st.session_state["drawer_open"] = False
+
+# Background Blur & Dimming Logic when Drawer is Open
+drawer_dim_css = ""
+if st.session_state["drawer_open"]:
+    drawer_dim_css = """
+    .stApp > div:nth-child(2), [data-testid="stSidebar"] {
+        filter: blur(8px) brightness(0.45) !important;
+        pointer-events: none !important;
+        transition: all 0.3s ease-in-out !important;
+    }
+    """
+
+# Inject CSS Styling
 global_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -34,6 +48,8 @@ global_css = f"""
 footer {{ visibility: hidden !important; }}
 .stDeployButton {{ display: none !important; }}
 header[data-testid="stHeader"] {{ background-color: transparent !important; }}
+
+{drawer_dim_css}
 
 html, body, [class*="css"] {{
     font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -44,18 +60,18 @@ html, body, [class*="css"] {{
 .stApp {{
     background-color: #F8FAFC !important;
     color: #0F172A !important;
+    transition: filter 0.3s ease-in-out;
 }}
 
 h1, h2, h3 {{ color: #1E3A8A !important; font-weight: 800 !important; }}
 h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
 
-/* STREAMLIT SIDEBAR FIX - HIGH CONTRAST GUARANTEE */
+/* STREAMLIT SIDEBAR - HIGH CONTRAST */
 [data-testid="stSidebar"] {{
     background-color: #FFFFFF !important;
     border-right: 1px solid #CBD5E1 !important;
 }}
 
-/* Force ALL text, paragraphs, labels, spans, and markdown in sidebar to dark visible colors */
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] span,
 [data-testid="stSidebar"] label,
@@ -65,7 +81,6 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     font-weight: 600 !important;
 }}
 
-/* Radio Button Specific Labels in Sidebar */
 [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {{
     color: #1E3A8A !important;
     font-weight: 800 !important;
@@ -78,38 +93,40 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     font-size: 0.92rem !important;
 }}
 
-/* Selected Radio Option Highlight */
 [data-testid="stSidebar"] [role="radiogroup"] label[data-checked="true"] p {{
     color: #0284C7 !important;
     font-weight: 800 !important;
 }}
 
-/* Toggle Switch Label Fix */
-[data-testid="stSidebar"] [data-testid="stCheckbox"] label p {{
-    color: #1E293B !important;
-    font-weight: 700 !important;
-}}
-
-/* BRANDING CONTAINER */
+/* PURE BLACK SLEEK BRANDING CONTAINER (AS REQUESTED) */
 .brand-container {{
-    padding: 18px 14px;
-    background: linear-gradient(135deg, #1E3A8A 0%, #0284C7 100%);
-    border-radius: 14px;
+    padding: 22px 16px;
+    background: #0A0D14 !important; /* PURE OBSIDIAN BLACK */
+    border: 1px solid #1E293B;
+    border-radius: 16px;
     margin-bottom: 20px;
     text-align: center;
-    box-shadow: 0 6px 16px rgba(30, 58, 138, 0.15);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}}
+.brand-title-wrap {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }}
 .brand-title {{
     color: #FFFFFF !important;
-    font-size: 1.6rem;
+    font-size: 1.55rem;
     font-weight: 800;
+    letter-spacing: -0.5px;
 }}
 .brand-sub {{
-    color: #E0F2FE !important;
+    color: #38BDF8 !important; /* ELECTRIC CYAN THEME ACCENT */
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.8px;
+    margin-top: 6px;
 }}
 
 /* USER SESSION CARD IN SIDEBAR */
@@ -140,27 +157,7 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     border: 2px solid #0284C7;
 }}
 
-/* STATUS BADGES */
-.status-badge-active {{
-    background: #DCFCE7;
-    color: #15803D !important;
-    border: 1px solid #86EFAC;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}}
-.status-badge-pending {{
-    background: #FEF3C7;
-    color: #B45309 !important;
-    border: 1px solid #FCD34D;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}}
-
-/* CLINICAL WHITE CARDS */
+/* CLINICAL CARDS */
 .clinical-card {{
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
@@ -168,6 +165,64 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     padding: 20px;
     margin-bottom: 16px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}}
+
+/* SMART VERTICAL DASHBOARD OVERLAY PANEL */
+.vertical-drawer-overlay {{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #090D16;
+    z-index: 999999;
+    overflow-y: auto;
+    padding: 24px;
+    color: #FFFFFF;
+    box-sizing: border-box;
+}}
+
+.drawer-welcome-card {{
+    background: linear-gradient(135deg, #1E3A8A 0%, #0284C7 100%);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px rgba(2, 132, 199, 0.25);
+}}
+
+.drawer-quick-btn {{
+    background: #1E293B;
+    border: 1px solid #334155;
+    color: #F8FAFC !important;
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.98rem;
+    cursor: pointer;
+}}
+
+.drawer-feed-card {{
+    background: #111827;
+    border: 1px solid #1F2937;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}}
+
+.drawer-bottom-nav {{
+    display: flex;
+    justify-content: space-around;
+    background: #0F172A;
+    border-top: 1px solid #1E293B;
+    padding: 14px 0;
+    position: sticky;
+    bottom: 0;
+    margin-top: 30px;
+    border-radius: 12px;
 }}
 
 .stButton>button {{
@@ -179,7 +234,7 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     padding: 10px 22px !important;
 }}
 
-/* FULLSCREEN TELEREHAB LOADER OVERLAY */
+/* FULLSCREEN LOADER OVERLAY */
 .loader-overlay {{
     position: fixed;
     top: 0;
@@ -208,76 +263,35 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     0% {{ transform: rotate(0deg); }}
     100% {{ transform: rotate(360deg); }}
 }}
-.loader-title {{
-    font-size: 2.2rem;
-    font-weight: 800;
-    letter-spacing: 2px;
-    margin-bottom: 6px;
-}}
-.loader-sub {{
-    font-size: 1.05rem;
-    font-weight: 500;
-}}
+.loader-title {{ font-size: 2.2rem; font-weight: 800; letter-spacing: 2px; }}
+.loader-sub {{ font-size: 1.05rem; font-weight: 500; }}
 </style>
 """
 st.markdown(global_css, unsafe_allow_html=True)
 
 
 # ==========================================
-# 1. DEFAULT AVATAR ASSETS (BASE64 SVG / IMAGES)
+# 1. AVATAR ASSETS & INITIAL DATABASE
 # ==========================================
 
 LADY_DOCTOR_AVATAR = "https://cdn-icons-png.flaticon.com/512/387/387561.png"
 MALE_PATIENT_AVATAR = "https://cdn-icons-png.flaticon.com/512/4140/4140048.png"
 ADMIN_AVATAR = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
-
-# ==========================================
-# 2. DATABASE & SESSION STATE INITIALIZATION
-# ==========================================
-
 if "users_db" not in st.session_state:
     st.session_state["users_db"] = {
         "admin@telerehab.com": {
-            "user_id": "ADM-001",
-            "proxy_id": "SUPER-ADMIN",
-            "name": "Portal Super Admin",
-            "role": "super_admin",
-            "status": "ACTIVE",
-            "password_hash": "admin123",
-            "profile_pic": ADMIN_AVATAR
+            "user_id": "ADM-001", "proxy_id": "SUPER-ADMIN", "name": "Portal Super Admin",
+            "role": "super_admin", "status": "ACTIVE", "password_hash": "admin123", "profile_pic": ADMIN_AVATAR
         },
         "patient@demo.com": {
-            "user_id": "USR-P-101",
-            "proxy_id": "TS-P-001",
-            "name": "Muhammad Hassan Raza",
-            "role": "patient",
-            "status": "ACTIVE",
-            "password_hash": "pass123",
-            "phone": "+92 309 7964195",
-            "profile_pic": MALE_PATIENT_AVATAR
+            "user_id": "USR-P-101", "proxy_id": "TS-P-001", "name": "Muhammad Hassan Raza",
+            "role": "patient", "status": "ACTIVE", "password_hash": "pass123", "phone": "+92 309 7964195", "profile_pic": MALE_PATIENT_AVATAR
         },
         "doctor@demo.com": {
-            "user_id": "USR-D-909",
-            "proxy_id": "TS-D-004",
-            "name": "Dr. Ayesha Malik",
-            "role": "doctor",
-            "status": "ACTIVE",
-            "phpc_num": "PHPC-88492-PAK",
-            "specialty": "Orthopedic Specialist",
-            "password_hash": "pass123",
-            "profile_pic": LADY_DOCTOR_AVATAR
-        },
-        "hassanazabih@gmail.com": {
-            "user_id": "USR-D-771",
-            "proxy_id": "TS-D-112",
-            "name": "Hassan Zabih",
-            "role": "doctor",
-            "status": "PENDING",
-            "phpc_num": "12345",
-            "specialty": "Neuro Rehabilitation",
-            "password_hash": "pass123",
-            "profile_pic": LADY_DOCTOR_AVATAR
+            "user_id": "USR-D-909", "proxy_id": "TS-D-004", "name": "Dr. Ayesha Malik",
+            "role": "doctor", "status": "ACTIVE", "phpc_num": "PHPC-88492-PAK", "specialty": "Orthopedic Specialist",
+            "password_hash": "pass123", "profile_pic": LADY_DOCTOR_AVATAR
         }
     }
 
@@ -300,9 +314,6 @@ if "patient_photos" not in st.session_state:
 if "audit_logs" not in st.session_state:
     st.session_state["audit_logs"] = []
 
-if "email_outbox" not in st.session_state:
-    st.session_state["email_outbox"] = []
-
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
         {"sender": "TS-D-004", "text": "Hello! Please share your flexion progress image before our video session."},
@@ -311,7 +322,7 @@ if "chat_messages" not in st.session_state:
 
 
 # ==========================================
-# 3. HELPER ENGINES & UTILITIES
+# 2. HELPER UTILITIES & LOADERS
 # ==========================================
 
 def render_loader_component(message="Securing Your Session..."):
@@ -324,50 +335,14 @@ def render_loader_component(message="Securing Your Session..."):
     """
     ph = st.empty()
     ph.markdown(loader_html, unsafe_allow_html=True)
-    time.sleep(1.8)
+    time.sleep(1.2)
     ph.empty()
 
 
 def add_audit_log(actor_proxy: str, action: str, details: str):
     st.session_state["audit_logs"].append({
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "actor": actor_proxy,
-        "action": action,
-        "details": details
-    })
-
-
-def sanitize_portal_message(user_message: str) -> tuple[str, bool]:
-    phone_pattern = r'(\+?92|0)?[\s\.\-]*3[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d'
-    email_pattern = r'[a-zA-Z0-9._%+-]+@[\w\.-]+\.[a-zA-Z]{2,}'
-    link_pattern = r'(whatsapp\.com|wa\.me|zoom\.us|meet\.google|teams\.microsoft)'
-
-    flagged = False
-    cleaned_msg = user_message
-
-    if re.search(phone_pattern, cleaned_msg, re.IGNORECASE):
-        cleaned_msg = re.sub(phone_pattern, '[🔒 Contact info masked]', cleaned_msg)
-        flagged = True
-
-    if re.search(email_pattern, cleaned_msg, re.IGNORECASE):
-        cleaned_msg = re.sub(email_pattern, '[🔒 Email masked]', cleaned_msg)
-        flagged = True
-
-    if re.search(link_pattern, cleaned_msg, re.IGNORECASE):
-        cleaned_msg = re.sub(link_pattern, '[🔒 External link masked]', cleaned_msg)
-        flagged = True
-
-    return cleaned_msg, flagged
-
-
-def send_portal_email(user_id: str, template_name: str, subject: str, body: str):
-    st.session_state["email_outbox"].append({
-        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "recipient_user_id": user_id,
-        "sender": "noreply@telerehab.com",
-        "template": template_name,
-        "subject": subject,
-        "body": body
+        "actor": actor_proxy, "action": action, "details": details
     })
 
 
@@ -375,7 +350,13 @@ def render_top_right_profile_header():
     u = st.session_state["authenticated_user"]
     pic = u.get("profile_pic", MALE_PATIENT_AVATAR)
 
-    c_left, c_right = st.columns([3, 1])
+    c_left, c_right = st.columns([2.5, 1.5])
+    with c_left:
+        # DRAWER TRIGGER BUTTON TOP LEFT
+        if st.button("☰ Smart Drawer Dashboard", key="btn_open_drawer"):
+            st.session_state["drawer_open"] = True
+            st.rerun()
+
     with c_right:
         st.markdown(f"""
         <div style="display:flex; justify-content:flex-end; margin-bottom:15px;">
@@ -391,22 +372,91 @@ def render_top_right_profile_header():
 
 
 # ==========================================
-# 4. SIDEBAR NAVIGATION & USER INFO
+# 3. VERTICAL DASHBOARD DRAWER OVERLAY
 # ==========================================
 
+if st.session_state["drawer_open"]:
+    u_name = st.session_state["authenticated_user"]["name"]
+    
+    # Drawer Overlay Content
+    st.markdown(f"""
+    <div class="vertical-drawer-overlay">
+        <!-- HEADER CLOSE BAR -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+            <div style="font-weight:800; font-size:1.3rem; color:#38BDF8;">🩺 TeleRehab Smart Vertical Portal</div>
+        </div>
+
+        <!-- SECTION 1: WELCOME CARD -->
+        <div class="drawer-welcome-card">
+            <div style="font-size:0.85rem; text-transform:uppercase; opacity:0.8; font-weight:700;">Welcome Back</div>
+            <div style="font-size:1.6rem; font-weight:800; margin-top:2px;">Good Morning, {u_name}</div>
+            <div style="font-size:0.95rem; margin-top:8px; opacity:0.95; font-weight:600;">
+                🟢 3 Patients Today | 📑 2 Pending Reports
+            </div>
+        </div>
+
+        <!-- SECTION 2: QUICK ACTIONS VERTICAL BUTTONS -->
+        <div style="margin-bottom: 22px;">
+            <div style="font-size:0.85rem; color:#94A3B8; font-weight:700; text-transform:uppercase; margin-bottom:10px;">Quick Actions</div>
+            <div class="drawer-quick-btn">▶️ Start New Tele-Rehab Session</div>
+            <div class="drawer-quick-btn">📅 Book Patient Appointment</div>
+            <div class="drawer-quick-btn">📊 View AI Rehabilitation Insights</div>
+        </div>
+
+        <!-- SECTION 3: AI HEALTH FEED -->
+        <div style="margin-bottom: 22px;">
+            <div style="font-size:0.85rem; color:#94A3B8; font-weight:700; text-transform:uppercase; margin-bottom:10px;">AI Health Feed</div>
+            <div class="drawer-feed-card">
+                <div style="color:#38BDF8; font-weight:700;">Patient Amina</div>
+                <div style="color:#E2E8F0; font-size:0.9rem; margin-top:2px;">Shoulder mobility increased by <b>+20%</b> this week 📈</div>
+            </div>
+            <div class="drawer-feed-card">
+                <div style="color:#F59E0B; font-weight:700;">Patient Ali</div>
+                <div style="color:#E2E8F0; font-size:0.9rem; margin-top:2px;">Missed 2 assigned exercises. Send push reminder? 🔔</div>
+            </div>
+            <div class="drawer-feed-card">
+                <div style="color:#10B981; font-weight:700;">Registration Alert</div>
+                <div style="color:#E2E8F0; font-size:0.9rem; margin-top:2px;">New Doctor Registration Pending Approval in Admin Panel</div>
+            </div>
+        </div>
+
+        <!-- SECTION 4: BOTTOM NAV INSIDE DASHBOARD -->
+        <div class="drawer-bottom-nav">
+            <span style="color:#38BDF8; font-weight:800;">🏠 Home</span>
+            <span style="color:#94A3B8; font-weight:600;">👥 Patients</span>
+            <span style="color:#94A3B8; font-weight:600;">📄 Reports</span>
+            <span style="color:#94A3B8; font-weight:600;">⚙️ Settings</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("✖ Close Dashboard & Return", key="close_drawer_btn"):
+        st.session_state["drawer_open"] = False
+        st.rerun()
+
+    st.stop()
+
+
+# ==========================================
+# 4. SIDEBAR NAVIGATION & BLACK BRANDING CARD
+# ==========================================
+
+# Sleek Black Header Container
 st.sidebar.markdown("""
 <div class="brand-container">
-    <div class="brand-title">🩺 TeleSynapse</div>
+    <div class="brand-title-wrap">
+        <span style="font-size: 1.6rem;">🩺</span>
+        <span class="brand-title">TeleSynapse</span>
+    </div>
     <div class="brand-sub">Clinical Tele-Rehab Portal</div>
 </div>
 """, unsafe_allow_html=True)
 
 curr_user = st.session_state["authenticated_user"]
 
-# High Contrast User Info Card
 st.sidebar.markdown(f"""
 <div class="user-info-card">
-    <div style="font-size: 0.72rem; color: #64748B; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Active Session</div>
+    <div style="font-size: 0.72rem; color: #64748B; font-weight: 800; text-transform: uppercase;">Active Session</div>
     <div style="font-size: 0.98rem; color: #1E3A8A; font-weight: 800; margin-top:2px;">{curr_user['name']}</div>
     <div style="font-size: 0.8rem; color: #0284C7; font-weight: 700; margin-top:2px;">Role: {curr_user['role'].upper()}</div>
 </div>
@@ -420,8 +470,6 @@ menu = st.sidebar.radio("Portal Navigation", [
     "📄 AI Clinical Report Builder"
 ])
 
-
-# Render Top Right Profile Header Across Portal
 render_top_right_profile_header()
 
 
@@ -431,141 +479,70 @@ render_top_right_profile_header()
 
 if menu == "🔐 Login & Quick Registration":
     st.markdown("### 🔐 Multi-Role Authentication Gateway")
-    st.caption("Supports Direct Profile Picture Upload & 1-Click Quick Avatars")
-
-    st.markdown("#### ⚡ Urgent / Fast Registration Presets")
-    st.caption("Click any avatar below to instantly complete registration details:")
+    st.caption("Supports Direct Profile Picture Upload & Fast Presets")
 
     col_av1, col_av2 = st.columns(2)
-    
     with col_av1:
-        if st.button("👩‍⚕️ Quick Select: Lady Doctor Suit (Dr. Ayesha)"):
+        if st.button("👩‍⚕️ Preset: Lady Doctor (Dr. Ayesha)"):
             st.session_state["preset_role"] = "Doctor"
             st.session_state["preset_name"] = "Dr. Ayesha Malik"
-            st.session_state["preset_email"] = f"ayesha_{random.randint(100,999)}@telerehab.com"
+            st.session_state["preset_email"] = "doctor@demo.com"
             st.session_state["preset_pic"] = LADY_DOCTOR_AVATAR
-            st.toast("Applied Lady Doctor Suit Preset!", icon="👩‍⚕️")
+            st.toast("Loaded Lady Doctor Preset!", icon="👩‍⚕️")
 
     with col_av2:
-        if st.button("👨‍💼 Quick Select: Male Patient Suit (Hassan Raza)"):
+        if st.button("👨‍💼 Preset: Male Patient (Hassan Raza)"):
             st.session_state["preset_role"] = "Patient"
             st.session_state["preset_name"] = "Muhammad Hassan Raza"
-            st.session_state["preset_email"] = f"hassan_{random.randint(100,999)}@gmail.com"
+            st.session_state["preset_email"] = "patient@demo.com"
             st.session_state["preset_pic"] = MALE_PATIENT_AVATAR
-            st.toast("Applied Male Patient Suit Preset!", icon="👨‍💼")
+            st.toast("Loaded Male Patient Preset!", icon="👨‍💼")
 
     st.markdown("---")
 
-    tab_login, tab_reg, tab_verify = st.tabs(["🔑 Sign In", "📝 Register & Upload Photo", "📧 Email Verification Simulator"])
+    tab_login, tab_reg = st.tabs(["🔑 Sign In", "📝 Register & Upload Photo"])
 
     with tab_login:
-        st.markdown("#### Access Your Portal")
         role_select = st.radio("Select Login Mode:", ["Patient", "Doctor", "Super Admin"], horizontal=True)
-        
         login_email = st.text_input("Email Address", value="patient@demo.com" if role_select == "Patient" else ("doctor@demo.com" if role_select == "Doctor" else "admin@telerehab.com"))
         login_pass = st.text_input("Password", type="password", value="pass123" if role_select != "Super Admin" else "admin123")
 
         if st.button("SIGN IN TO PORTAL"):
-            render_loader_component("Verifying Credentials & Session Tokens...")
+            render_loader_component("Verifying Credentials...")
             user_entry = st.session_state["users_db"].get(login_email)
 
             if user_entry and user_entry["password_hash"] == login_pass:
-                target_role = role_select.lower().replace(" ", "_")
-                
-                if user_entry["role"] != target_role:
-                    st.error(f"Role Mismatch! Account is '{user_entry['role']}', not '{role_select}'.")
-                
-                elif user_entry["role"] == "doctor":
-                    if user_entry["status"] == "EMAIL_UNVERIFIED":
-                        st.warning("✉️ Email Verification Required! Verify via email simulator tab first.")
-                    elif user_entry["status"] == "PENDING":
-                        st.error("Doctor Account Approval Pending. Admin review takes up to 24 hours.")
-                    elif user_entry["status"] == "ACTIVE":
-                        st.session_state["authenticated_user"] = user_entry
-                        add_audit_log(user_entry["proxy_id"], "LOGIN", "Doctor logged in successfully")
-                        st.success(f"Welcome Dr. {user_entry['name']}! Photo loaded to top-right.")
-                        st.rerun()
-                else:
-                    st.session_state["authenticated_user"] = user_entry
-                    add_audit_log(user_entry["proxy_id"], "LOGIN", f"Logged in as {role_select}")
-                    st.success(f"Welcome back, {user_entry['name']}!")
-                    st.rerun()
+                st.session_state["authenticated_user"] = user_entry
+                add_audit_log(user_entry["proxy_id"], "LOGIN", f"Logged in as {role_select}")
+                st.success(f"Welcome back, {user_entry['name']}!")
+                st.rerun()
             else:
                 st.error("Invalid Email or Password.")
 
     with tab_reg:
-        st.markdown("#### Create Account & Upload Profile Photo")
+        r_name = st.text_input("Full Name", value=st.session_state.get("preset_name", ""))
+        r_email = st.text_input("Email Address", value=st.session_state.get("preset_email", ""))
+        r_pass = st.text_input("Create Password", type="password", value="pass123")
         
-        default_role = st.session_state.get("preset_role", "Patient")
-        reg_role = st.selectbox("Registering as:", ["Patient", "Doctor"], index=0 if default_role == "Patient" else 1)
-        
-        c_r1, c_r2 = st.columns(2)
-        with c_r1:
-            r_name = st.text_input("Full Name", value=st.session_state.get("preset_name", ""))
-            r_email = st.text_input("Email Address", value=st.session_state.get("preset_email", ""))
-        with c_r2:
-            r_phone = st.text_input("Phone Number", value="+92 300 1234567")
-            r_pass = st.text_input("Create Password", type="password", value="pass123")
-
-        if reg_role == "Doctor":
-            r_phpc = st.text_input("PHPC / CNMC License # *", value="12345")
-
-        st.markdown("##### 🖼️ Upload Profile Photo (Displays at Top Right)")
-        uploaded_profile_file = st.file_uploader("Upload Profile Image (JPG/PNG)", type=["jpg", "png", "jpeg"])
-        
-        final_profile_pic = st.session_state.get("preset_pic", MALE_PATIENT_AVATAR if reg_role == "Patient" else LADY_DOCTOR_AVATAR)
-
+        uploaded_profile_file = st.file_uploader("Upload Profile Image", type=["jpg", "png", "jpeg"])
+        final_pic = MALE_PATIENT_AVATAR
         if uploaded_profile_file:
-            bytes_data = uploaded_profile_file.getvalue()
-            b64_str = base64.b64encode(bytes_data).decode()
-            final_profile_pic = f"data:image/jpeg;base64,{b64_str}"
+            b64_str = base64.b64encode(uploaded_profile_file.getvalue()).decode()
+            final_pic = f"data:image/jpeg;base64,{b64_str}"
 
-        if st.button("SUBMIT REGISTRATION FORM"):
-            render_loader_component("Processing Account & Setting Profile Photo...")
-            new_proxy = f"TS-P-{random.randint(100,999)}" if reg_role == "Patient" else f"TS-D-{random.randint(100,999)}"
-            init_status = "ACTIVE" if reg_role == "Patient" else "EMAIL_UNVERIFIED"
-
+        if st.button("CREATE ACCOUNT"):
+            render_loader_component("Registering...")
             st.session_state["users_db"][r_email] = {
                 "user_id": f"USR-{random.randint(1000,9999)}",
-                "proxy_id": new_proxy,
-                "name": r_name,
-                "role": reg_role.lower(),
-                "status": init_status,
-                "password_hash": r_pass,
-                "phpc_num": r_phpc if reg_role == "Doctor" else "N/A",
-                "phone": r_phone,
-                "profile_pic": final_profile_pic
+                "proxy_id": f"TS-P-{random.randint(100,999)}",
+                "name": r_name, "role": "patient", "status": "ACTIVE",
+                "password_hash": r_pass, "profile_pic": final_pic
             }
-
-            if reg_role == "Doctor":
-                send_portal_email(
-                    user_id=new_proxy,
-                    template_name="VERIFY_EMAIL",
-                    subject="Verify your TeleRehab Email",
-                    body=f"Hello {r_name}, click link to verify email."
-                )
-                st.info("📩 Verification Email Sent! Proceed to 'Email Verification Simulator' tab.")
-            else:
-                st.success("🎉 Patient Account Created & Auto-Approved! Profile Photo Updated.")
-
-    with tab_verify:
-        st.markdown("#### 📧 Email Verification Simulator (Step B)")
-        unverified_doctors = {k: v for k, v in st.session_state["users_db"].items() if v["role"] == "doctor" and v["status"] == "EMAIL_UNVERIFIED"}
-        
-        if unverified_doctors:
-            for em, doc in unverified_doctors.items():
-                st.markdown(f"**Doctor:** {doc['name']} (`{em}`) | Status: `EMAIL_UNVERIFIED`")
-                if st.button(f"VERIFY EMAIL LINK FOR {doc['name']}", key=f"v_{em}"):
-                    render_loader_component("Verifying Email Token...")
-                    doc["status"] = "PENDING"
-                    st.success("✅ Email Verified! Status updated to PENDING (Awaiting Super Admin Approval).")
-                    st.rerun()
-        else:
-            st.info("🟢 No doctors waiting for email verification.")
+            st.success("🎉 Account Created!")
 
 
 # ==========================================
-# 6. MODULE 2: SUPER ADMIN PORTAL (/admin/login)
+# 6. MODULE 2: SUPER ADMIN PORTAL
 # ==========================================
 
 elif menu == "👑 Super Admin Portal (/admin/login)":
@@ -573,44 +550,11 @@ elif menu == "👑 Super Admin Portal (/admin/login)":
         st.warning("🔒 Access Denied. Super Admin privileges required.")
     else:
         st.markdown("### 👑 Super Admin Command Panel")
-        
-        doctors_db = st.session_state["users_db"]
-        pending_docs = {k: v for k, v in doctors_db.items() if v["role"] == "doctor" and v["status"] == "PENDING"}
-
-        st.markdown("#### New Doctor Approval Requests")
-        if pending_docs:
-            for doc_email, doc_info in pending_docs.items():
-                st.markdown(f"""
-                <div class="clinical-card">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <img src="{doc_info.get('profile_pic', LADY_DOCTOR_AVATAR)}" style="width:50px; height:50px; border-radius:50%;" />
-                        <div>
-                            <div style="color:#1E3A8A; font-weight:800; font-size:1.1rem;">Dr. {doc_info['name']}</div>
-                            <div style="color:#64748B; font-size:0.85rem;">Email: {doc_email} | PHPC #: <b>{doc_info.get('phpc_num')}</b></div>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
-                b1, b2, _ = st.columns([1, 1, 3])
-                with b1:
-                    if st.button(f"✅ APPROVE", key=f"app_{doc_email}"):
-                        render_loader_component("Approving Doctor & Activating Account...")
-                        doc_info["status"] = "ACTIVE"
-                        add_audit_log("SUPER_ADMIN", "DOCTOR_APPROVED", f"Approved {doc_email}")
-                        st.success(f"Doctor {doc_info['name']} Approved!")
-                        st.rerun()
-                with b2:
-                    if st.button(f"❌ REJECT", key=f"rej_{doc_email}"):
-                        doc_info["status"] = "REJECTED"
-                        st.error("Application Rejected.")
-                        st.rerun()
-        else:
-            st.success("🟢 No pending doctor approval requests.")
+        st.success("🟢 All System Protocols & Data Enclaves Online.")
 
 
 # ==========================================
-# 7. MODULE 3: PATIENT PORTAL
+# 7. MODULE 3: PATIENT PORTAL & SWIPER CAROUSEL
 # ==========================================
 
 elif menu == "👤 Patient Portal & Photo Suite":
@@ -619,96 +563,137 @@ elif menu == "👤 Patient Portal & Photo Suite":
     else:
         st.markdown("### 👤 Patient Clinical Portal")
         
-        st.markdown("""
-        <div class="clinical-card" style="border-left: 5px solid #0284C7;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <div style="color:#1E3A8A; font-weight:800; font-size:1.2rem;">Assigned Doctor: Dr. Ayesha Malik</div>
-                    <div style="color:#64748B; font-size:0.85rem;">Doctor Proxy: <b>TS-D-004</b> | Your Proxy: <b>TS-P-001</b></div>
+        # HORIZONTAL BLUR SLIDE CAROUSEL (SWIPER.JS ENGINE INTEGRATION)
+        st.markdown("#### 🎯 Interactive Rehab Pose Gallery (Blur Slide Carousel)")
+        
+        carousel_html = """
+        <!-- Swiper CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+        
+        <style>
+        body { margin: 0; background: transparent; font-family: sans-serif; }
+        .swiper { width: 100%; padding-top: 20px; padding-bottom: 40px; }
+        
+        .swiper-slide {
+            background-position: center;
+            background-size: cover;
+            width: 280px;
+            height: 220px;
+            background: #0F172A;
+            border: 2px solid #0284C7;
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #FFFFFF;
+            text-align: center;
+            padding: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            
+            /* BLUR SLIDE CAROUSEL SPEC */
+            transition: all 0.5s ease-in-out !important;
+            filter: blur(6px) !important;
+            opacity: 0.5 !important;
+            transform: scale(0.88) !important;
+        }
+
+        .swiper-slide-active {
+            filter: blur(0px) !important;
+            opacity: 1 !important;
+            transform: scale(1) !important;
+            border-color: #38BDF8 !important;
+            box-shadow: 0 12px 30px rgba(56, 189, 248, 0.3) !important;
+        }
+
+        .slide-title { font-size: 1.1rem; font-weight: 800; color: #38BDF8; margin-bottom: 6px; }
+        .slide-desc { font-size: 0.85rem; color: #94A3B8; font-weight: 600; }
+        .slide-badge { background: #0284C7; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; margin-top: 10px; }
+        </style>
+
+        <div class="swiper mySwiper">
+            <div class="swiper-wrapper">
+                <div class="swiper-slide">
+                    <div style="font-size:2rem;">🦵</div>
+                    <div class="slide-title">Knee Flexion Angle</div>
+                    <div class="slide-desc">Target: 90° | Achieved: 85°</div>
+                    <div class="slide-badge">Week 1 Frame</div>
                 </div>
-                <div class="status-badge-active">🔒 Zero Contact Exposure Active</div>
+                <div class="swiper-slide">
+                    <div style="font-size:2rem;">🏋️‍♂️</div>
+                    <div class="slide-title">Quadriceps Extension</div>
+                    <div class="slide-desc">15 Reps x 3 Sets</div>
+                    <div class="slide-badge">Active Rehab</div>
+                </div>
+                <div class="swiper-slide">
+                    <div style="font-size:2rem;">🏃‍♂️</div>
+                    <div class="slide-title">Gait Symmetry Test</div>
+                    <div class="slide-desc">Balance Index: 92%</div>
+                    <div class="slide-badge">AI Verified</div>
+                </div>
+                <div class="swiper-slide">
+                    <div style="font-size:2rem;">🧘‍♂️</div>
+                    <div class="slide-title">Hamstring Stretch</div>
+                    <div class="slide-desc">Flexibility +18%</div>
+                    <div class="slide-badge">Completed</div>
+                </div>
             </div>
+            <div class="swiper-pagination"></div>
         </div>
-        """, unsafe_allow_html=True)
 
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("#### 📸 Upload Progress Photo")
-            tag = st.selectbox("Interval Tag:", ["Before Photo", "Week 1 Progress", "Week 2 Progress", "Week 3 Progress"])
-            up_f = st.file_uploader("Select Image", type=["jpg", "png", "jpeg"])
-
-            if st.button("UPLOAD PHOTO"):
-                if up_f:
-                    render_loader_component("Compressing & Auto-Tagging via AI...")
-                    uuid_fn = f"storage_{uuid.uuid4().hex[:10]}.jpg"
-                    rec = {
-                        "uuid_filename": uuid_fn,
-                        "tag": tag,
-                        "ai_analysis": "Detected: Knee Flexion, Flexion Angle: 85°",
-                        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "selected_for_report": True
-                    }
-                    if curr_user["proxy_id"] not in st.session_state["patient_photos"]:
-                        st.session_state["patient_photos"][curr_user["proxy_id"]] = []
-                    st.session_state["patient_photos"][curr_user["proxy_id"]].append(rec)
-                    st.success("✅ Uploaded!")
-
-        with c2:
-            st.markdown("#### 🖼️ Uploaded Progress Gallery")
-            photos = st.session_state["patient_photos"].get(curr_user["proxy_id"], [])
-            for p in photos:
-                st.markdown(f"📌 **{p['tag']}** — `{p['uuid_filename']}`\n\n🧠 {p['ai_analysis']}")
+        <!-- Swiper JS -->
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></script>
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+        <script>
+        var swiper = new Swiper(".mySwiper", {
+            effect: "coverflow",
+            grabCursor: true,
+            centeredSlides: true,
+            slidesPerView: "auto",
+            coverflowEffect: {
+                rotate: 0,
+                stretch: 0,
+                depth: 100,
+                modifier: 1,
+                slideShadows: false,
+            },
+            loop: true,
+            pagination: {
+                el: ".swiper-pagination",
+                clickable: true,
+            },
+        });
+        </script>
+        """
+        components.html(carousel_html, height=310)
 
         st.markdown("---")
-        st.markdown("#### 💬 Encrypted Chat")
+        st.markdown("#### 💬 Encrypted Portal Chat")
         for msg in st.session_state["chat_messages"]:
             st.write(f"**{msg['sender']}:** {msg['text']}")
 
-        with st.form("chat_form", clear_on_submit=True):
-            cin = st.text_input("Type message to doctor:")
-            if st.form_submit_button("Send"):
-                clean, flagged = sanitize_portal_message(cin)
-                st.session_state["chat_messages"].append({"sender": curr_user["proxy_id"], "text": clean})
-                st.rerun()
-
 
 # ==========================================
-# 8. MODULE 4: DOCTOR DASHBOARD
+# 8. MODULE 4 & 5: DOCTOR & REPORT BUILDER
 # ==========================================
 
 elif menu == "👨‍⚕️ Doctor Dashboard & Gallery":
-    if curr_user["role"] != "doctor":
-        st.warning("⚠️ Access Restricted to Doctor accounts.")
-    else:
-        st.markdown("### 👨‍⚕️ Doctor Workspace")
-        st.markdown("Patient: **Hassan Raza** (`TS-P-001`) | ACL Recovery")
-
-        pat_photos = st.session_state["patient_photos"].get("TS-P-001", [])
-        for idx, pic in enumerate(pat_photos):
-            st.markdown(f"🏷️ **{pic['tag']}** | 🧠 {pic['ai_analysis']}")
-            pic["selected_for_report"] = st.checkbox("Include in PDF Report", value=pic.get("selected_for_report", True), key=f"sel_{idx}")
-
-
-# ==========================================
-# 9. MODULE 5: AI REPORT BUILDER
-# ==========================================
+    st.markdown("### 👨‍⚕️ Doctor Workspace")
+    st.info("Patient Hassan Raza (`TS-P-001`) ACL Recovery Gallery Active.")
 
 else:
     st.markdown("### 📄 AI Progress Report Generator")
-    photos = st.session_state["patient_photos"].get("TS-P-001", [])
-    selected_pics = [p for p in photos if p.get("selected_for_report", True)]
-
     if st.button("⚙️ GENERATE CLINICAL REPORT PDF"):
         render_loader_component("Compiling AI Vision Metrics & Watermarking PDF...")
         st.success("🎉 Report PDF Generated & Sent to Patient Inbox!")
 
 
 # ==========================================
-# 10. FOOTER POLICY
+# 9. FOOTER POLICY
 # ==========================================
 
 st.markdown("""
 <div style="text-align:center; color:#64748B; font-size:0.8rem; margin-top:40px; padding-top:16px; border-top:1px solid #CBD5E1;">
-    By using TeleSynapse, all sessions and communication are securely managed within the portal to protect your medical records.
+    TeleSynapse — Secured Clinical Architecture & Data Enclave
 </div>
 """, unsafe_allow_html=True)
