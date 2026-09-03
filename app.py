@@ -9,7 +9,7 @@ import time
 import base64
 
 # ==========================================
-# 0. GLOBAL PAGE CONFIG & HIGH-CONTRAST THEME
+# 0. GLOBAL PAGE CONFIG & CRISP LIGHT THEME
 # ==========================================
 
 st.set_page_config(
@@ -39,7 +39,7 @@ if st.session_state["drawer_open"]:
     }
     """
 
-# Complete Precision CSS Override
+# Complete 100% Light/White Theme CSS Overrides
 global_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -91,26 +91,39 @@ button[data-baseweb="tab"] span {{
     font-size: 1rem !important;
 }}
 
-/* INPUT FIELDS BACKGROUND & TEXT */
-div[data-baseweb="input"] {{
+/* FORCE INPUT FIELDS TO CRISP PURE WHITE WITH DARK TEXT */
+div[data-baseweb="input"], 
+div[data-baseweb="base-input"],
+input[data-testid="stTextInput"] {{
     background-color: #FFFFFF !important;
-    border: 1.5px solid #CBD5E1 !important;
+    border: 1.5px solid #94A3B8 !important;
     border-radius: 8px !important;
 }}
 
-div[data-baseweb="input"] input {{
+div[data-baseweb="input"] input,
+div[data-baseweb="base-input"] input {{
     color: #0F172A !important;
     background-color: #FFFFFF !important;
     font-weight: 600 !important;
+    font-size: 0.95rem !important;
 }}
 
-/* STREAMLIT BUTTON OVERRIDE (FORCES ALL INNER TEXT TO PURE WHITE) */
+/* REMOVE BROWSER AUTOFILL DARK OVERLAY */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {{
+    -webkit-box-shadow: 0 0 0 30px #FFFFFF inset !important;
+    -webkit-text-fill-color: #0F172A !important;
+}}
+
+/* STREAMLIT BUTTON OVERRIDE */
 div.stButton > button {{
     background: linear-gradient(135deg, #0284C7 0%, #1E3A8A 100%) !important;
     border: none !important;
     border-radius: 10px !important;
     padding: 10px 22px !important;
-    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25) !important;
     transition: all 0.2s ease-in-out !important;
 }}
 
@@ -126,13 +139,13 @@ div.stButton > button div {{
 div.stButton > button:hover {{
     background: linear-gradient(135deg, #0369A1 0%, #1D4ED8 100%) !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45) !important;
+    box-shadow: 0 6px 18px rgba(2, 132, 199, 0.35) !important;
 }}
 
 /* STREAMLIT SIDEBAR */
 [data-testid="stSidebar"] {{
     background-color: #FFFFFF !important;
-    border-right: 1px solid #CBD5E1 !important;
+    border-right: 1px solid #E2E8F0 !important;
 }}
 
 [data-testid="stSidebar"] p,
@@ -142,41 +155,41 @@ div.stButton > button:hover {{
     font-weight: 600 !important;
 }}
 
-/* OBSIDIAN BLACK SIDEBAR BRANDING CARD */
+/* CLEAN LIGHT BLUE CLINICAL BRANDING CARD IN SIDEBAR */
 .brand-container {{
-    padding: 20px 16px;
-    background-color: #090D16 !important;
-    border: 1px solid #1E293B !important;
+    padding: 18px 16px;
+    background: linear-gradient(135deg, #EFF6FF 0%, #E0F2FE 100%) !important;
+    border: 1.5px solid #BAE6FD !important;
     border-radius: 16px;
     margin-bottom: 20px;
     text-align: center;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 4px 15px rgba(2, 132, 199, 0.08);
 }}
 .brand-title-wrap {{
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
 }}
 .brand-title {{
-    color: #FFFFFF !important;
+    color: #1E3A8A !important;
     font-size: 1.45rem !important;
     font-weight: 800 !important;
     letter-spacing: -0.5px;
 }}
 .brand-sub {{
-    color: #38BDF8 !important;
+    color: #0284C7 !important;
     font-size: 0.72rem !important;
     font-weight: 800 !important;
     text-transform: uppercase;
-    letter-spacing: 1.8px;
-    margin-top: 6px;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
 }}
 
 /* USER SESSION CARD IN SIDEBAR */
 .user-info-card {{
-    background: #F1F5F9;
-    border: 1px solid #CBD5E1;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
     border-radius: 10px;
     padding: 12px;
     margin-bottom: 20px;
@@ -191,7 +204,7 @@ div.stButton > button:hover {{
     border: 1px solid #CBD5E1;
     padding: 8px 16px;
     border-radius: 40px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }}
 .profile-avatar-img {{
     width: 42px;
@@ -209,7 +222,7 @@ div.stButton > button:hover {{
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: #090D16;
+    background: #0F172A;
     z-index: 999999;
     overflow-y: auto;
     padding: 24px;
@@ -240,8 +253,8 @@ div.stButton > button:hover {{
 }}
 
 .drawer-feed-card {{
-    background: #111827;
-    border: 1px solid #1F2937;
+    background: #1E293B;
+    border: 1px solid #334155;
     border-radius: 12px;
     padding: 14px 16px;
     margin-bottom: 12px;
@@ -250,8 +263,8 @@ div.stButton > button:hover {{
 .drawer-bottom-nav {{
     display: flex;
     justify-content: space-around;
-    background: #0F172A;
-    border-top: 1px solid #1E293B;
+    background: #1E293B;
+    border-top: 1px solid #334155;
     padding: 14px 0;
     position: sticky;
     bottom: 0;
@@ -442,13 +455,13 @@ if st.session_state["drawer_open"]:
 
 
 # ==========================================
-# 5. SIDEBAR NAVIGATION & BLACK BRANDING CARD
+# 5. SIDEBAR NAVIGATION & LIGHT BRANDING CARD
 # ==========================================
 
 st.sidebar.markdown("""
 <div class="brand-container">
     <div class="brand-title-wrap">
-        <span style="font-size: 1.6rem;">🩺</span>
+        <span style="font-size: 1.5rem;">🩺</span>
         <span class="brand-title">TeleSynapse</span>
     </div>
     <div class="brand-sub">Clinical Tele-Rehab Portal</div>
@@ -583,18 +596,18 @@ elif menu == "👤 Patient Portal & Photo Suite":
         .carousel-card {
             flex: 0 0 260px;
             scroll-snap-align: center;
-            background: #0F172A;
+            background: #FFFFFF;
             border: 2px solid #0284C7;
             border-radius: 16px;
             padding: 18px;
-            color: #FFFFFF;
+            color: #0F172A;
             text-align: center;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
         }
         .card-icon { font-size: 2.2rem; margin-bottom: 8px; }
-        .card-title { font-size: 1.1rem; font-weight: 800; color: #38BDF8; margin-bottom: 4px; }
-        .card-desc { font-size: 0.85rem; color: #94A3B8; font-weight: 600; }
-        .card-badge { background: #0284C7; padding: 4px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; margin-top: 10px; display: inline-block; }
+        .card-title { font-size: 1.1rem; font-weight: 800; color: #1E3A8A; margin-bottom: 4px; }
+        .card-desc { font-size: 0.85rem; color: #64748B; font-weight: 600; }
+        .card-badge { background: #0284C7; color: #FFFFFF; padding: 4px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; margin-top: 10px; display: inline-block; }
         </style>
 
         <div class="carousel-container">
