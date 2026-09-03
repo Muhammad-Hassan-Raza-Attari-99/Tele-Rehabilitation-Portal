@@ -9,7 +9,7 @@ import time
 import base64
 
 # ==========================================
-# 0. GLOBAL PAGE CONFIG & WHITE-BLUE CLINICAL THEME
+# 0. GLOBAL PAGE CONFIG & HIGH-CONTRAST THEME
 # ==========================================
 
 st.set_page_config(
@@ -25,7 +25,7 @@ big_text = st.sidebar.toggle("🔍 Large Text Mode", value=False)
 
 base_font = "17px" if big_text else "15px"
 
-# Inject High-End White & Medical Blue Styling
+# Inject International Grade Medical White & Blue High-Contrast Styling
 global_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -40,18 +40,54 @@ html, body, [class*="css"] {{
     font-size: {base_font} !important;
 }}
 
-/* CLEAN WHITE & MEDICAL BLUE THEME BACKGROUND */
+/* GLOBAL BACKGROUND */
 .stApp {{
-    background: #F8FAFC !important;
+    background-color: #F8FAFC !important;
     color: #0F172A !important;
 }}
 
 h1, h2, h3 {{ color: #1E3A8A !important; font-weight: 800 !important; }}
 h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
 
+/* STREAMLIT SIDEBAR FIX - HIGH CONTRAST GUARANTEE */
 [data-testid="stSidebar"] {{
     background-color: #FFFFFF !important;
-    border-right: 1px solid #E2E8F0 !important;
+    border-right: 1px solid #CBD5E1 !important;
+}}
+
+/* Force ALL text, paragraphs, labels, spans, and markdown in sidebar to dark visible colors */
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] div,
+[data-testid="stSidebar"] .stMarkdown {{
+    color: #0F172A !important;
+    font-weight: 600 !important;
+}}
+
+/* Radio Button Specific Labels in Sidebar */
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {{
+    color: #1E3A8A !important;
+    font-weight: 800 !important;
+    font-size: 0.95rem !important;
+}}
+
+[data-testid="stSidebar"] [role="radiogroup"] label p {{
+    color: #1E293B !important;
+    font-weight: 600 !important;
+    font-size: 0.92rem !important;
+}}
+
+/* Selected Radio Option Highlight */
+[data-testid="stSidebar"] [role="radiogroup"] label[data-checked="true"] p {{
+    color: #0284C7 !important;
+    font-weight: 800 !important;
+}}
+
+/* Toggle Switch Label Fix */
+[data-testid="stSidebar"] [data-testid="stCheckbox"] label p {{
+    color: #1E293B !important;
+    font-weight: 700 !important;
 }}
 
 /* BRANDING CONTAINER */
@@ -76,16 +112,25 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
     letter-spacing: 1.2px;
 }}
 
+/* USER SESSION CARD IN SIDEBAR */
+.user-info-card {{
+    background: #F1F5F9;
+    border: 1px solid #CBD5E1;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 20px;
+}}
+
 /* TOP RIGHT PROFILE HEADER CARD */
 .top-profile-badge {{
     display: flex;
     align-items: center;
     gap: 12px;
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    border: 1px solid #CBD5E1;
     padding: 8px 16px;
     border-radius: 40px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }}
 .profile-avatar-img {{
     width: 44px;
@@ -98,7 +143,7 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
 /* STATUS BADGES */
 .status-badge-active {{
     background: #DCFCE7;
-    color: #15803D;
+    color: #15803D !important;
     border: 1px solid #86EFAC;
     padding: 4px 10px;
     border-radius: 8px;
@@ -107,17 +152,8 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
 }}
 .status-badge-pending {{
     background: #FEF3C7;
-    color: #B45309;
+    color: #B45309 !important;
     border: 1px solid #FCD34D;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}}
-.status-badge-unverified {{
-    background: #E0F2FE;
-    color: #0369A1;
-    border: 1px solid #7DD3FC;
     padding: 4px 10px;
     border-radius: 8px;
     font-size: 0.75rem;
@@ -191,7 +227,6 @@ st.markdown(global_css, unsafe_allow_html=True)
 # 1. DEFAULT AVATAR ASSETS (BASE64 SVG / IMAGES)
 # ==========================================
 
-# High Quality Vector Avatars
 LADY_DOCTOR_AVATAR = "https://cdn-icons-png.flaticon.com/512/387/387561.png"
 MALE_PATIENT_AVATAR = "https://cdn-icons-png.flaticon.com/512/4140/4140048.png"
 ADMIN_AVATAR = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
@@ -203,7 +238,6 @@ ADMIN_AVATAR = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
 if "users_db" not in st.session_state:
     st.session_state["users_db"] = {
-        # Super Admin Account
         "admin@telerehab.com": {
             "user_id": "ADM-001",
             "proxy_id": "SUPER-ADMIN",
@@ -213,7 +247,6 @@ if "users_db" not in st.session_state:
             "password_hash": "admin123",
             "profile_pic": ADMIN_AVATAR
         },
-        # Demo Patient
         "patient@demo.com": {
             "user_id": "USR-P-101",
             "proxy_id": "TS-P-001",
@@ -224,7 +257,6 @@ if "users_db" not in st.session_state:
             "phone": "+92 309 7964195",
             "profile_pic": MALE_PATIENT_AVATAR
         },
-        # Demo Active Doctor
         "doctor@demo.com": {
             "user_id": "USR-D-909",
             "proxy_id": "TS-D-004",
@@ -236,7 +268,6 @@ if "users_db" not in st.session_state:
             "password_hash": "pass123",
             "profile_pic": LADY_DOCTOR_AVATAR
         },
-        # Pending Doctor Sample
         "hassanazabih@gmail.com": {
             "user_id": "USR-D-771",
             "proxy_id": "TS-D-112",
@@ -284,7 +315,6 @@ if "chat_messages" not in st.session_state:
 # ==========================================
 
 def render_loader_component(message="Securing Your Session..."):
-    """Displays full screen 2-sec rotating TeleRehab circle loader."""
     loader_html = f"""
     <div class="loader-overlay">
         <div class="spinner-circle"></div>
@@ -299,7 +329,6 @@ def render_loader_component(message="Securing Your Session..."):
 
 
 def add_audit_log(actor_proxy: str, action: str, details: str):
-    """Senior Audit Logger."""
     st.session_state["audit_logs"].append({
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "actor": actor_proxy,
@@ -309,7 +338,6 @@ def add_audit_log(actor_proxy: str, action: str, details: str):
 
 
 def sanitize_portal_message(user_message: str) -> tuple[str, bool]:
-    """Anti-Leakage Filter for Phone, Email & Links."""
     phone_pattern = r'(\+?92|0)?[\s\.\-]*3[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d'
     email_pattern = r'[a-zA-Z0-9._%+-]+@[\w\.-]+\.[a-zA-Z]{2,}'
     link_pattern = r'(whatsapp\.com|wa\.me|zoom\.us|meet\.google|teams\.microsoft)'
@@ -333,7 +361,6 @@ def sanitize_portal_message(user_message: str) -> tuple[str, bool]:
 
 
 def send_portal_email(user_id: str, template_name: str, subject: str, body: str):
-    """Backend Masked Email Service."""
     st.session_state["email_outbox"].append({
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "recipient_user_id": user_id,
@@ -345,7 +372,6 @@ def send_portal_email(user_id: str, template_name: str, subject: str, body: str)
 
 
 def render_top_right_profile_header():
-    """Renders the user's uploaded profile picture at top right of the screen."""
     u = st.session_state["authenticated_user"]
     pic = u.get("profile_pic", MALE_PATIENT_AVATAR)
 
@@ -376,8 +402,15 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 curr_user = st.session_state["authenticated_user"]
-st.sidebar.markdown(f"**Active User:** `{curr_user['name']}`")
-st.sidebar.markdown(f"**Role:** `{curr_user['role'].upper()}`")
+
+# High Contrast User Info Card
+st.sidebar.markdown(f"""
+<div class="user-info-card">
+    <div style="font-size: 0.72rem; color: #64748B; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Active Session</div>
+    <div style="font-size: 0.98rem; color: #1E3A8A; font-weight: 800; margin-top:2px;">{curr_user['name']}</div>
+    <div style="font-size: 0.8rem; color: #0284C7; font-weight: 700; margin-top:2px;">Role: {curr_user['role'].upper()}</div>
+</div>
+""", unsafe_allow_html=True)
 
 menu = st.sidebar.radio("Portal Navigation", [
     "🔐 Login & Quick Registration",
@@ -400,7 +433,6 @@ if menu == "🔐 Login & Quick Registration":
     st.markdown("### 🔐 Multi-Role Authentication Gateway")
     st.caption("Supports Direct Profile Picture Upload & 1-Click Quick Avatars")
 
-    # URGENT QUICK AVATAR SELECTION BUTTONS
     st.markdown("#### ⚡ Urgent / Fast Registration Presets")
     st.caption("Click any avatar below to instantly complete registration details:")
 
@@ -426,7 +458,6 @@ if menu == "🔐 Login & Quick Registration":
 
     tab_login, tab_reg, tab_verify = st.tabs(["🔑 Sign In", "📝 Register & Upload Photo", "📧 Email Verification Simulator"])
 
-    # LOGIN TAB
     with tab_login:
         st.markdown("#### Access Your Portal")
         role_select = st.radio("Select Login Mode:", ["Patient", "Doctor", "Super Admin"], horizontal=True)
@@ -448,8 +479,7 @@ if menu == "🔐 Login & Quick Registration":
                     if user_entry["status"] == "EMAIL_UNVERIFIED":
                         st.warning("✉️ Email Verification Required! Verify via email simulator tab first.")
                     elif user_entry["status"] == "PENDING":
-                        # EXACT SENIOR DEV ERROR LOGIC
-                        st.error(" Doctor Account Approval Pending. Admin review takes up to 24 hours.")
+                        st.error("Doctor Account Approval Pending. Admin review takes up to 24 hours.")
                     elif user_entry["status"] == "ACTIVE":
                         st.session_state["authenticated_user"] = user_entry
                         add_audit_log(user_entry["proxy_id"], "LOGIN", "Doctor logged in successfully")
@@ -463,7 +493,6 @@ if menu == "🔐 Login & Quick Registration":
             else:
                 st.error("Invalid Email or Password.")
 
-    # REGISTER TAB
     with tab_reg:
         st.markdown("#### Create Account & Upload Profile Photo")
         
@@ -481,14 +510,12 @@ if menu == "🔐 Login & Quick Registration":
         if reg_role == "Doctor":
             r_phpc = st.text_input("PHPC / CNMC License # *", value="12345")
 
-        # PROFILE PHOTO UPLOAD OPTION
         st.markdown("##### 🖼️ Upload Profile Photo (Displays at Top Right)")
         uploaded_profile_file = st.file_uploader("Upload Profile Image (JPG/PNG)", type=["jpg", "png", "jpeg"])
         
         final_profile_pic = st.session_state.get("preset_pic", MALE_PATIENT_AVATAR if reg_role == "Patient" else LADY_DOCTOR_AVATAR)
 
         if uploaded_profile_file:
-            # Convert uploaded profile image to base64 for instant top-right rendering
             bytes_data = uploaded_profile_file.getvalue()
             b64_str = base64.b64encode(bytes_data).decode()
             final_profile_pic = f"data:image/jpeg;base64,{b64_str}"
@@ -521,7 +548,6 @@ if menu == "🔐 Login & Quick Registration":
             else:
                 st.success("🎉 Patient Account Created & Auto-Approved! Profile Photo Updated.")
 
-    # SIMULATED VERIFICATION
     with tab_verify:
         st.markdown("#### 📧 Email Verification Simulator (Step B)")
         unverified_doctors = {k: v for k, v in st.session_state["users_db"].items() if v["role"] == "doctor" and v["status"] == "EMAIL_UNVERIFIED"}
@@ -633,7 +659,6 @@ elif menu == "👤 Patient Portal & Photo Suite":
             for p in photos:
                 st.markdown(f"📌 **{p['tag']}** — `{p['uuid_filename']}`\n\n🧠 {p['ai_analysis']}")
 
-        # In-Portal Chat
         st.markdown("---")
         st.markdown("#### 💬 Encrypted Chat")
         for msg in st.session_state["chat_messages"]:
@@ -683,7 +708,7 @@ else:
 # ==========================================
 
 st.markdown("""
-<div style="text-align:center; color:#64748B; font-size:0.8rem; margin-top:40px; padding-top:16px; border-top:1px solid #E2E8F0;">
+<div style="text-align:center; color:#64748B; font-size:0.8rem; margin-top:40px; padding-top:16px; border-top:1px solid #CBD5E1;">
     By using TeleSynapse, all sessions and communication are securely managed within the portal to protect your medical records.
 </div>
 """, unsafe_allow_html=True)
