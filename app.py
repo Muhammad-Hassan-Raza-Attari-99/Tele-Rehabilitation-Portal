@@ -43,7 +43,7 @@ if st.session_state["drawer_open"]:
     }
     """
 
-# COMPLETE LIGHT THEME & INPUT / RADIO FIXES
+# COMPLETE LIGHT THEME & BULLETPROOF RADIO LABEL CSS
 global_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -65,7 +65,7 @@ html, body, [class*="css"] {{
     color: #0F172A !important;
 }}
 
-/* ALL INPUT FIELDS (TEXT, PASSWORD, SELECTBOX) FORCE WHITE */
+/* ALL INPUT FIELDS FORCE WHITE & CRISP DARK TEXT */
 div[data-baseweb="input"], 
 div[data-baseweb="base-input"],
 div[data-baseweb="input"] > div,
@@ -74,7 +74,7 @@ input[type="text"],
 input[type="password"] {{
     background-color: #FFFFFF !important;
     color: #0F172A !important;
-    border: 1.5px solid #94A3B8 !important;
+    border: 1.5px solid #64748B !important;
     border-radius: 10px !important;
     font-weight: 600 !important;
 }}
@@ -84,15 +84,26 @@ div[data-baseweb="input"] input {{
     background-color: #FFFFFF !important;
 }}
 
-/* RADIO BUTTON ACCENT STYLING */
-div[data-testid="stRadio"] label span p {{
+/* STRICT OVERRIDE FOR RADIO BUTTON LABELS (MAIN CONTENT & SIDEBAR) */
+div[data-testid="stRadio"] label,
+div[data-testid="stRadio"] label p,
+div[data-testid="stRadio"] label span,
+div[role="radiogroup"] label,
+div[role="radiogroup"] label p,
+div[role="radiogroup"] label span,
+[data-testid="stSidebar"] div[data-testid="stRadio"] label p,
+[data-testid="stSidebar"] div[data-testid="stRadio"] label span {{
     color: #0F172A !important;
-    font-weight: 700 !important;
+    font-weight: 800 !important;
+    font-size: 0.98rem !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }}
 
-div[data-baseweb="radio"] div {{
-    background-color: #FFFFFF !important;
+/* RADIO BUTTON CIRCLE ACCENTS */
+div[data-baseweb="radio"] > div:first-child {{
     border-color: #0284C7 !important;
+    background-color: #FFFFFF !important;
 }}
 
 /* HEADINGS & LABELS */
@@ -101,8 +112,8 @@ h4, h5, h6 {{ color: #0284C7 !important; font-weight: 700 !important; }}
 
 div[data-testid="stWidgetLabel"] p, 
 label[data-testid="stWidgetLabel"] p {{
-    color: #1E293B !important;
-    font-weight: 700 !important;
+    color: #0F172A !important;
+    font-weight: 800 !important;
 }}
 
 /* BUTTON STYLING */
@@ -121,10 +132,14 @@ div.stButton > button:hover {{
     transform: translateY(-1px) !important;
 }}
 
-/* SIDEBAR LIGHT STYLE */
+/* SIDEBAR LIGHT STYLE & ALL TEXT VISIBILITY */
 [data-testid="stSidebar"] {{
     background-color: #FFFFFF !important;
     border-right: 1px solid #E2E8F0 !important;
+}}
+
+[data-testid="stSidebar"] * {{
+    color: #0F172A !important;
 }}
 
 /* TOP LIGHT BRAND CARD */
@@ -183,11 +198,15 @@ div.stButton > button:hover {{
 
 .drawer-header-banner {{
     background: linear-gradient(135deg, #0284C7 0%, #1E3A8A 100%);
-    color: #FFFFFF;
+    color: #FFFFFF !important;
     border-radius: 16px;
     padding: 24px;
     margin-bottom: 24px;
     box-shadow: 0 8px 24px rgba(2, 132, 199, 0.2);
+}}
+
+.drawer-header-banner * {{
+    color: #FFFFFF !important;
 }}
 
 /* TOP RIGHT PROFILE HEADER CARD */
@@ -266,7 +285,6 @@ if st.session_state["drawer_open"]:
     
     st.markdown('<div class="vertical-drawer-overlay">', unsafe_allow_html=True)
     
-    # Drawer Header
     c_dh1, c_dh2 = st.columns([4, 1])
     with c_dh1:
         st.markdown(f"""
@@ -283,7 +301,6 @@ if st.session_state["drawer_open"]:
             st.session_state["drawer_open"] = False
             st.rerun()
 
-    # Drawer Actions
     st.markdown("### ⚡ Quick Interactive Actions")
     col_a1, col_a2, col_a3 = st.columns(3)
     
@@ -318,19 +335,6 @@ if st.session_state["drawer_open"]:
         """, unsafe_allow_html=True)
         if st.button("📈 View Recovery Metrics", key="dw_action_insights"):
             st.info("Knee Flexion angle improved +12° over last 7 days.")
-
-    # Recent Patient Feed Section
-    st.markdown("### 🔔 Active Portal Live Feed")
-    st.markdown("""
-    <div class="drawer-card-light" style="border-left: 5px solid #0284C7;">
-        <div style="font-weight:800; color:#1E3A8A;">✅ Patient Motion Assessment Verified</div>
-        <div style="color:#475569; font-size:0.9rem; margin-top:4px;">Gait balance score achieved <b>94% symmetry</b> in latest test.</div>
-    </div>
-    <div class="drawer-card-light" style="border-left: 5px solid #F59E0B;">
-        <div style="font-weight:800; color:#1E3A8A;">⏰ Upcoming Video Call Session</div>
-        <div style="color:#475569; font-size:0.9rem; margin-top:4px;">Scheduled with Dr. Ayesha Malik today at <b>04:00 PM PKT</b>.</div>
-    </div>
-    """, unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
@@ -431,7 +435,6 @@ elif menu == "📹 Live Tele-Rehab Call Suite" or st.session_state["active_call"
     col_v1, col_v2 = st.columns([3, 1])
 
     with col_v1:
-        # REAL WEBRTC WEBCAM FEED INTEGRATION
         webrtc_call_html = """
         <!DOCTYPE html>
         <html>
@@ -485,7 +488,6 @@ elif menu == "📹 Live Tele-Rehab Call Suite" or st.session_state["active_call"
                 }
                 startCamera();
 
-                // Angle simulation
                 setInterval(() => {
                     const angle = (85 + Math.random() * 8).toFixed(1);
                     document.getElementById('angle').innerText = angle + "°";
@@ -529,7 +531,134 @@ elif menu == "📹 Live Tele-Rehab Call Suite" or st.session_state["active_call"
 
 
 # ==========================================
-# 7. OTHER MODULES (SUPER ADMIN / PATIENT / DOCTOR / REPORT)
+# 7. CAROUSEL WITH BLUR TRANSITION + SNAP SCROLL MODULE
+# ==========================================
+
+elif menu == "👤 Patient Portal & Photo Suite":
+    st.markdown("### 👤 Patient Clinical Progress Suite")
+    st.markdown("#### 🎯 Interactive Recovery Pose Gallery (*Blur Transition + Snap Scroll*)")
+
+    blur_carousel_html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <style>
+        body { margin: 0; background: transparent; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .carousel-wrapper {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            padding: 10px 0;
+        }
+        .snap-carousel {
+            display: flex;
+            gap: 22px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            padding: 20px 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .snap-carousel::-webkit-scrollbar {
+            height: 6px;
+        }
+        .snap-carousel::-webkit-scrollbar-thumb {
+            background: #0284C7;
+            border-radius: 10px;
+        }
+        .carousel-card {
+            flex: 0 0 280px;
+            scroll-snap-align: center;
+            background: #FFFFFF;
+            border: 2px solid #BAE6FD;
+            border-radius: 20px;
+            padding: 22px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(2, 132, 199, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: blur(2.5px) opacity(0.7);
+            transform: scale(0.94);
+            cursor: pointer;
+        }
+        .carousel-card:hover, .carousel-card.active {
+            filter: blur(0px) opacity(1);
+            transform: scale(1.03);
+            border-color: #0284C7;
+            box-shadow: 0 12px 30px rgba(2, 132, 199, 0.22);
+        }
+        .card-tag {
+            background: linear-gradient(135deg, #0284C7, #1E3A8A);
+            color: #FFFFFF;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        .card-icon { font-size: 2.5rem; margin-bottom: 8px; }
+        .card-title { font-size: 1.15rem; font-weight: 800; color: #1E3A8A; margin-bottom: 4px; }
+        .card-desc { font-size: 0.88rem; color: #475569; font-weight: 600; }
+        .card-stat { font-size: 1.5rem; font-weight: 800; color: #0284C7; margin: 10px 0 4px 0; }
+    </style>
+    </head>
+    <body>
+    <div class="carousel-wrapper">
+        <div class="snap-carousel" id="carousel">
+            <div class="carousel-card active">
+                <div class="card-tag">ACL Week 2</div>
+                <div class="card-icon">🦵</div>
+                <div class="card-title">Knee Flexion Angle</div>
+                <div class="card-stat">88.5° / 90°</div>
+                <div class="card-desc">Target angle almost reached. Mobility +12%</div>
+            </div>
+            <div class="carousel-card">
+                <div class="card-tag">Active Therapy</div>
+                <div class="card-icon">🏋️‍♂️</div>
+                <div class="card-title">Quadriceps Extension</div>
+                <div class="card-stat">3 Sets x 15 Reps</div>
+                <div class="card-desc">EMG Muscle activation score: 94%</div>
+            </div>
+            <div class="carousel-card">
+                <div class="card-tag">AI Gait Test</div>
+                <div class="card-icon">🏃‍♂️</div>
+                <div class="card-title">Gait Symmetry</div>
+                <div class="card-stat">92% Balance</div>
+                <div class="card-desc">Zero lateral limp detected in walk cycle</div>
+            </div>
+            <div class="carousel-card">
+                <div class="card-tag">Rotator Cuff</div>
+                <div class="card-icon">💪</div>
+                <div class="card-title">Shoulder Abduction</div>
+                <div class="card-stat">110° Angle</div>
+                <div class="card-desc">Full range overhead lift verified by AI</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cards = document.querySelectorAll('.carousel-card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                cards.forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+            });
+        });
+    </script>
+    </body>
+    </html>
+    """
+    components.html(blur_carousel_html, height=270)
+
+    st.markdown("---")
+    st.markdown("#### 💬 Encrypted Portal Chat")
+    for msg in st.session_state["chat_messages"]:
+        st.write(f"**{msg['sender']}:** {msg['text']}")
+
+
+# ==========================================
+# 8. OTHER MODULES (SUPER ADMIN / DOCTOR / REPORT)
 # ==========================================
 
 elif menu == "👑 Super Admin Portal (/admin/login)":
@@ -538,10 +667,6 @@ elif menu == "👑 Super Admin Portal (/admin/login)":
     else:
         st.markdown("### 👑 Super Admin Command Panel")
         st.success("🟢 All System Protocols & Data Enclaves Online.")
-
-elif menu == "👤 Patient Portal & Photo Suite":
-    st.markdown("### 👤 Patient Clinical Portal")
-    st.info("Knee Flexion & Joint Pose Progress Dashboard Active.")
 
 elif menu == "👨‍⚕️ Doctor Dashboard & Gallery":
     st.markdown("### 👨‍⚕️ Doctor Workspace")
@@ -554,7 +679,7 @@ else:
 
 
 # ==========================================
-# 8. FOOTER
+# 9. FOOTER POLICY
 # ==========================================
 
 st.markdown("""
