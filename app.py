@@ -6,10 +6,9 @@ import datetime
 import re
 import uuid
 import time
-import base64
 
 # ==========================================
-# 0. GLOBAL PAGE CONFIG & THEME
+# 0. GLOBAL PAGE CONFIG & CLINICAL THEME
 # ==========================================
 
 st.set_page_config(
@@ -19,14 +18,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Accessibility Mode
+# Accessibility Mode Toggle
 st.sidebar.markdown("### ♿ Accessibility Mode")
 big_text = st.sidebar.toggle("🔍 Large Text Mode", value=False)
 
 base_font = "17px" if big_text else "15px"
 hero_size = "2.2rem" if big_text else "1.8rem"
 
-# Inject Custom Styling & Loader CSS Overlay
+# Inject High-End Clinical Cyan & Slate Blue Styling
 global_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -40,88 +39,111 @@ html, body, [class*="css"] {{
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-size: {base_font} !important;
 }}
+
+/* CLINICAL SLATE & CYAN THEME BACKGROUND */
 .stApp {{
-    background: #0B0F17 !important;
-    color: #F3F4F6 !important;
+    background: radial-gradient(circle at top right, #0F172A 0%, #080E1A 100%) !important;
+    color: #F8FAFC !important;
 }}
 
-h1, h2, h3 {{ color: #34D399 !important; font-weight: 800 !important; }}
+h1, h2, h3 {{ color: #00F5D4 !important; font-weight: 800 !important; }}
 h4, h5, h6 {{ color: #38BDF8 !important; font-weight: 700 !important; }}
 
 [data-testid="stSidebar"] {{
-    background-color: #111827 !important;
-    border-right: 1px solid #1F2937 !important;
+    background-color: #0B132B !important;
+    border-right: 1px solid #1E2E52 !important;
 }}
 
-/* BRANDING & CARDS */
+/* DOCTORAL BRANDING CONTAINER */
 .brand-container {{
-    padding: 18px 14px;
-    background: linear-gradient(135deg, #064E3B 0%, #111827 100%);
-    border: 1px solid #059669;
-    border-radius: 14px;
-    margin-bottom: 20px;
+    padding: 20px 16px;
+    background: linear-gradient(135deg, #0284C7 0%, #0B132B 100%);
+    border: 1px solid #0EA5E9;
+    border-radius: 16px;
+    margin-bottom: 22px;
     text-align: center;
+    box-shadow: 0 8px 24px rgba(2, 132, 199, 0.2);
 }}
 .brand-title {{
-    color: #34D399 !important;
-    font-size: 1.6rem;
+    color: #00F5D4 !important;
+    font-size: 1.65rem;
     font-weight: 800;
+    letter-spacing: -0.5px;
 }}
 .brand-sub {{
-    color: #9CA3AF !important;
+    color: #94A3B8 !important;
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.4px;
 }}
 
-.value-pitch-card {{
-    background: #1E293B;
+/* STATUS BADGES */
+.status-badge-active {{
+    background: rgba(16, 185, 129, 0.15);
+    color: #10B981;
+    border: 1px solid #10B981;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}}
+.status-badge-pending {{
+    background: rgba(245, 158, 11, 0.15);
+    color: #F59E0B;
+    border: 1px solid #F59E0B;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}}
+.status-badge-unverified {{
+    background: rgba(56, 189, 248, 0.15);
+    color: #38BDF8;
     border: 1px solid #38BDF8;
-    border-radius: 14px;
-    padding: 18px;
-    margin-top: 16px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}}
+.status-badge-rejected {{
+    background: rgba(239, 68, 68, 0.15);
+    color: #EF4444;
+    border: 1px solid #EF4444;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
 }}
 
-.watermark-badge {{
-    position: relative;
-    border: 2px dashed #059669;
-    border-radius: 12px;
-    padding: 10px;
-    background: #0F172A;
-    margin-top: 10px;
-}}
-.watermark-overlay {{
-    position: absolute;
-    bottom: 12px;
-    right: 18px;
-    background: rgba(6, 78, 59, 0.85);
-    color: #34D399;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.68rem;
-    padding: 4px 8px;
-    border-radius: 6px;
-    border: 1px solid #059669;
+/* CARDS & PANELS */
+.clinical-card {{
+    background: #111C35;
+    border: 1px solid #1E2E52;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }}
 
 .stButton>button {{
-    background: linear-gradient(90deg, #10B981, #06B6D4) !important;
-    color: #0B0F17 !important;
+    background: linear-gradient(90deg, #0EA5E9 0%, #00F5D4 100%) !important;
+    color: #080E1A !important;
     font-weight: 800 !important;
     border-radius: 10px !important;
     border: none !important;
-    padding: 10px 20px !important;
+    padding: 10px 22px !important;
+    transition: all 0.3s ease !important;
 }}
 
-/* FULLSCREEN LOADER COMPONENT (GRADIENT + ROTATING CIRCLE) */
+/* FULLSCREEN TELEREHAB LOADER OVERLAY */
 .loader-overlay {{
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(135deg, #0A2342 0%, #1E90FF 100%);
+    background: linear-gradient(135deg, #080E1A 0%, #0284C7 100%);
     z-index: 999999;
     display: flex;
     flex-direction: column;
@@ -131,34 +153,34 @@ h4, h5, h6 {{ color: #38BDF8 !important; font-weight: 700 !important; }}
     text-align: center;
 }}
 .spinner-circle {{
-    width: 70px;
-    height: 70px;
-    border: 5px solid rgba(255, 255, 255, 0.2);
-    border-top: 5px solid #FFFFFF;
+    width: 75px;
+    height: 75px;
+    border: 6px solid rgba(255, 255, 255, 0.15);
+    border-top: 6px solid #00F5D4;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 24px;
+    animation: spin 0.9s linear infinite;
+    margin-bottom: 22px;
 }}
 @keyframes spin {{
     0% {{ transform: rotate(0deg); }}
     100% {{ transform: rotate(360deg); }}
 }}
 .loader-title {{
-    font-size: 2rem;
+    font-size: 2.2rem;
     font-weight: 800;
-    letter-spacing: 1.5px;
-    margin-bottom: 8px;
+    letter-spacing: 2px;
+    color: #00F5D4;
+    margin-bottom: 6px;
 }}
 .loader-sub {{
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 500;
-    opacity: 0.9;
+    color: #E2E8F0;
 }}
 .loader-warning {{
-    font-size: 0.85rem;
-    margin-top: 20px;
-    opacity: 0.7;
-    letter-spacing: 0.5px;
+    font-size: 0.82rem;
+    margin-top: 18px;
+    color: #94A3B8;
 }}
 </style>
 """
@@ -171,6 +193,16 @@ st.markdown(global_css, unsafe_allow_html=True)
 
 if "users_db" not in st.session_state:
     st.session_state["users_db"] = {
+        # Pre-seeded Super Admin Account
+        "admin@telerehab.com": {
+            "user_id": "ADM-001",
+            "proxy_id": "SUPER-ADMIN",
+            "name": "Portal Super Admin",
+            "role": "super_admin",
+            "status": "ACTIVE",
+            "password_hash": "admin123"
+        },
+        # Demo Active Patient
         "patient@demo.com": {
             "user_id": "USR-P-101",
             "proxy_id": "TS-P-001",
@@ -180,6 +212,7 @@ if "users_db" not in st.session_state:
             "password_hash": "pass123",
             "phone": "+92 309 7964195"
         },
+        # Demo Active Doctor
         "doctor@demo.com": {
             "user_id": "USR-D-909",
             "proxy_id": "TS-D-004",
@@ -188,6 +221,17 @@ if "users_db" not in st.session_state:
             "status": "ACTIVE",
             "phpc_num": "PHPC-88492-PAK",
             "specialty": "Orthopedic Specialist",
+            "password_hash": "pass123"
+        },
+        # Sample Pending Doctor for Admin Approval Testing
+        "hassanazabih@gmail.com": {
+            "user_id": "USR-D-771",
+            "proxy_id": "TS-D-112",
+            "name": "Hassan Zabih",
+            "role": "doctor",
+            "status": "PENDING",
+            "phpc_num": "12345",
+            "specialty": "Neuro Rehabilitation",
             "password_hash": "pass123"
         }
     }
@@ -204,13 +248,6 @@ if "patient_photos" not in st.session_state:
                 "ai_analysis": "Detected: Knee Joint, Swelling: Moderate, Angle: 45°",
                 "timestamp": "2026-08-10 14:30:00",
                 "selected_for_report": True
-            },
-            {
-                "uuid_filename": f"{uuid.uuid4().hex[:10]}.jpg",
-                "tag": "Week 1 Progress",
-                "ai_analysis": "Detected: Knee Joint, Swelling: Reduced (-30%), Flexion: 85°",
-                "timestamp": "2026-08-17 09:15:00",
-                "selected_for_report": True
             }
         ]
     }
@@ -223,12 +260,9 @@ if "email_outbox" not in st.session_state:
 
 if "chat_messages" not in st.session_state:
     st.session_state["chat_messages"] = [
-        {"sender": "TS-D-004", "text": "Hello! Please upload your Week 2 progress photo before our video call."},
-        {"sender": "TS-P-001", "text": "Sure doctor, I have uploaded the active flexion angle."}
+        {"sender": "TS-D-004", "text": "Hello! Please share your flexion progress image before our video session."},
+        {"sender": "TS-P-001", "text": "Sure doctor, uploading right now."}
     ]
-
-if "trigger_loader" not in st.session_state:
-    st.session_state["trigger_loader"] = False
 
 
 # ==========================================
@@ -236,7 +270,7 @@ if "trigger_loader" not in st.session_state:
 # ==========================================
 
 def render_loader_component(message="Securing Your Session..."):
-    """Displays the custom 2-second full screen TeleRehab loader."""
+    """Renders the custom 2-second TeleRehab screen overlay."""
     loader_html = f"""
     <div class="loader-overlay">
         <div class="spinner-circle"></div>
@@ -245,14 +279,14 @@ def render_loader_component(message="Securing Your Session..."):
         <div class="loader-warning">Please do not close or refresh this page</div>
     </div>
     """
-    loader_placeholder = st.empty()
-    loader_placeholder.markdown(loader_html, unsafe_allow_html=True)
+    ph = st.empty()
+    ph.markdown(loader_html, unsafe_allow_html=True)
     time.sleep(1.8)
-    loader_placeholder.empty()
+    ph.empty()
 
 
 def add_audit_log(actor_proxy: str, action: str, details: str):
-    """Silent Senior Audit Trail logger."""
+    """Senior Audit Trail Logger."""
     st.session_state["audit_logs"].append({
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "actor": actor_proxy,
@@ -262,7 +296,7 @@ def add_audit_log(actor_proxy: str, action: str, details: str):
 
 
 def sanitize_portal_message(user_message: str) -> tuple[str, bool]:
-    """Smart Anti-Leakage Regex Filter."""
+    """Smart Anti-Leakage Contact Masking Filter."""
     phone_pattern = r'(\+?92|0)?[\s\.\-]*3[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d[\s\.\-]*\d'
     email_pattern = r'[a-zA-Z0-9._%+-]+@[\w\.-]+\.[a-zA-Z]{2,}'
     link_pattern = r'(whatsapp\.com|wa\.me|zoom\.us|meet\.google|teams\.microsoft)'
@@ -271,7 +305,7 @@ def sanitize_portal_message(user_message: str) -> tuple[str, bool]:
     cleaned_msg = user_message
 
     if re.search(phone_pattern, cleaned_msg, re.IGNORECASE):
-        cleaned_msg = re.sub(phone_pattern, '[🔒 Contact info masked for your privacy & safety]', cleaned_msg)
+        cleaned_msg = re.sub(phone_pattern, '[🔒 Contact info masked for your safety]', cleaned_msg)
         flagged = True
 
     if re.search(email_pattern, cleaned_msg, re.IGNORECASE):
@@ -285,28 +319,21 @@ def sanitize_portal_message(user_message: str) -> tuple[str, bool]:
     return cleaned_msg, flagged
 
 
-def send_portal_email(user_id: str, template_name: str, subject: str, body: str, attachment: str = None):
-    """Backend-only Masked Email Sender. No PII exposed to frontend."""
+def send_portal_email(user_id: str, template_name: str, subject: str, body: str):
+    """Backend Masked Email Service (SMTP/SendGrid Proxy)."""
     st.session_state["email_outbox"].append({
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "recipient_user_id": user_id,
         "sender": "noreply@telerehab.com",
         "template": template_name,
         "subject": subject,
-        "body": body,
-        "attachment": attachment or "None"
+        "body": body
     })
-    add_audit_log("SYSTEM_EMAIL", "EMAIL_DISPATCHED", f"Template: {template_name} to {user_id}")
-
-
-# Trigger loader animation if requested
-if st.session_state["trigger_loader"]:
-    render_loader_component("Verifying Security Tokens & Encrypting...")
-    st.session_state["trigger_loader"] = False
+    add_audit_log("SYSTEM_EMAIL", "DISPATCH", f"Email '{subject}' sent to {user_id}")
 
 
 # ==========================================
-# 3. SIDEBAR NAVIGATION & AUTH SWITCHER
+# 3. SIDEBAR NAVIGATION & BRANDING
 # ==========================================
 
 st.sidebar.markdown("""
@@ -318,149 +345,267 @@ st.sidebar.markdown("""
 
 # Active User Display
 curr_user = st.session_state["authenticated_user"]
-st.sidebar.markdown(f"**Logged in as:** `{curr_user['name']}`")
-st.sidebar.markdown(f"**Role:** `{curr_user['role'].upper()}` | **Proxy:** `{curr_user['proxy_id']}`")
+st.sidebar.markdown(f"**Logged in:** `{curr_user['name']}`")
+st.sidebar.markdown(f"**Role:** `{curr_user['role'].upper()}` | **Proxy ID:** `{curr_user['proxy_id']}`")
 
 menu = st.sidebar.radio("Portal Navigation", [
-    "🔐 Authentication & Dual Login",
-    "👤 Patient Portal & Photo Center",
-    "👨‍⚕️ Doctor Dashboard & Patient Gallery",
-    "📄 AI Report Generator (PDF Preview)",
-    "📊 Senior Admin & Security Trail"
+    "🔐 Login & Registration Portal",
+    "👑 Super Admin Portal (/admin/login)",
+    "👤 Patient Portal & Photo Suite",
+    "👨‍⚕️ Doctor Dashboard & Gallery",
+    "📄 AI Clinical Report Builder"
 ])
 
 
 # ==========================================
-# 4. MODULE 1: AUTHENTICATION & DUAL LOGIN
+# 4. MODULE 1: LOGIN & REGISTRATION
 # ==========================================
 
-if menu == "🔐 Authentication & Dual Login":
-    st.markdown("### 🔐 TeleSynapse Dual Authentication Portal")
-    st.caption("Strict Role Isolation System — 1 Database, 2 Distinct Roles")
+if menu == "🔐 Login & Registration Portal":
+    st.markdown("### 🔐 Multi-Role Authentication Gateway")
+    st.caption("Secure Single-Database Dual Role Isolation System")
 
-    tab1, tab2 = st.tabs(["🔑 Sign In", "📝 Register New Account"])
+    tab_login, tab_reg, tab_verify = st.tabs(["🔑 Sign In", "📝 Doctor & Patient Register", "📧 Email Verification Simulator"])
 
-    with tab1:
-        st.markdown("#### Log In to Your Portal")
-        role_select = st.radio("Select Role:", ["Patient", "Doctor"], horizontal=True)
-        login_email = st.text_input("Email Address", value="patient@demo.com" if role_select == "Patient" else "doctor@demo.com")
-        login_pass = st.text_input("Password", type="password", value="pass123")
+    # LOGIN TAB
+    with tab_login:
+        st.markdown("#### Access Portal")
+        role_select = st.radio("Select Login Mode:", ["Patient", "Doctor", "Super Admin"], horizontal=True)
+        login_email = st.text_input("Email Address", value="patient@demo.com" if role_select == "Patient" else ("doctor@demo.com" if role_select == "Doctor" else "admin@telerehab.com"))
+        login_pass = st.text_input("Password", type="password", value="pass123" if role_select != "Super Admin" else "admin123")
 
         if st.button("SIGN IN TO PORTAL"):
-            render_loader_component("Authenticating User & Securing Session...")
-            user_found = st.session_state["users_db"].get(login_email)
+            render_loader_component("Verifying Credentials & Session Encryption...")
+            user_entry = st.session_state["users_db"].get(login_email)
 
-            if user_found and user_found["password_hash"] == login_pass and user_found["role"] == role_select.lower():
-                if user_found["status"] == "PENDING":
-                    st.error("⏳ Doctor Account Approval Pending. Admin review takes up to 24 hours.")
+            if user_entry and user_entry["password_hash"] == login_pass:
+                target_role = role_select.lower().replace(" ", "_")
+                if user_entry["role"] != target_role:
+                    st.error(f"Role Mismatch! Selected '{role_select}' but account is registered as '{user_entry['role']}'.")
+                
+                # DOCTOR APPROVAL & VERIFICATION BLOCKING LOGIC
+                elif user_entry["role"] == "doctor":
+                    if user_entry["status"] == "EMAIL_UNVERIFIED":
+                        st.warning("✉️ Email Verification Required! Please verify your email via the simulator tab first.")
+                    elif user_entry["status"] == "PENDING":
+                        # EXACT SENIOR SPECIFICATION ERROR
+                        st.error(" Doctor Account Approval Pending. Admin review takes up to 24 hours.")
+                    elif user_entry["status"] == "REJECTED":
+                        st.error("❌ Your Doctor account application was rejected by Super Admin.")
+                    elif user_entry["status"] == "ACTIVE":
+                        st.session_state["authenticated_user"] = user_entry
+                        add_audit_log(user_entry["proxy_id"], "LOGIN", "Doctor successfully logged in")
+                        st.success(f"Welcome back, {user_entry['name']}! Redirecting to /doctor/dashboard...")
+                        st.rerun()
                 else:
-                    st.session_state["authenticated_user"] = user_found
-                    add_audit_log(user_found["proxy_id"], "USER_LOGIN", f"Successful login as {role_select}")
-                    st.success(f"Welcome back, {user_found['name']}! Redirecting...")
+                    # Patient / Super Admin Auto-Login
+                    st.session_state["authenticated_user"] = user_entry
+                    add_audit_log(user_entry["proxy_id"], "LOGIN", f"Successful login as {role_select}")
+                    st.success(f"Welcome back, {user_entry['name']}!")
                     st.rerun()
             else:
-                st.error("Invalid credentials or role mismatch.")
+                st.error("Invalid email or password.")
 
-    with tab2:
-        st.markdown("#### Create New Account")
-        reg_role = st.selectbox("I am registering as a:", ["Patient", "Doctor"])
+    # REGISTER TAB
+    with tab_reg:
+        st.markdown("#### New Account Onboarding")
+        reg_role = st.selectbox("I am applying as a:", ["Patient", "Doctor"])
         
-        col_r1, col_r2 = st.columns(2)
-        with col_r1:
-            reg_name = st.text_input("Full Name")
-            reg_email = st.text_input("Email Address")
-        with col_r2:
-            reg_phone = st.text_input("Phone Number")
-            reg_pass = st.text_input("Choose Password", type="password")
+        c_r1, c_r2 = st.columns(2)
+        with c_r1:
+            r_name = st.text_input("Full Name")
+            r_email = st.text_input("Email Address")
+        with c_r2:
+            r_phone = st.text_input("Phone Number")
+            r_pass = st.text_input("Create Password", type="password")
 
         if reg_role == "Doctor":
-            phpc_id = st.text_input("PHPC / CNMC License Number *")
-            spec = st.text_input("Specialty / Department", value="Physical Rehabilitation")
+            r_phpc = st.text_input("PHPC / CNMC License # *", value="12345")
+            r_spec = st.text_input("Medical Specialty", value="Physiotherapist")
 
-        if st.button("CREATE ACCOUNT & VERIFY OTP"):
-            render_loader_component("Registering Account & Issuing Security Tokens...")
+        if st.button("SUBMIT REGISTRATION"):
+            render_loader_component("Creating Account & Issuing Verification Tokens...")
             new_proxy = f"TS-P-{random.randint(100,999)}" if reg_role == "Patient" else f"TS-D-{random.randint(100,999)}"
-            new_status = "ACTIVE" if reg_role == "Patient" else "PENDING"
+            
+            # Patients = Auto-Approve (ACTIVE), Doctors = EMAIL_UNVERIFIED
+            init_status = "ACTIVE" if reg_role == "Patient" else "EMAIL_UNVERIFIED"
 
-            st.session_state["users_db"][reg_email] = {
+            st.session_state["users_db"][r_email] = {
                 "user_id": f"USR-{random.randint(1000,9999)}",
                 "proxy_id": new_proxy,
-                "name": reg_name,
+                "name": r_name,
                 "role": reg_role.lower(),
-                "status": new_status,
-                "password_hash": reg_pass,
-                "phone": reg_phone
+                "status": init_status,
+                "password_hash": r_pass,
+                "phpc_num": r_phpc if reg_role == "Doctor" else "N/A",
+                "phone": r_phone
             }
 
-            add_audit_log(new_proxy, "REGISTER", f"Registered new {reg_role} account (Status: {new_status})")
-
-            # Dispatch Auto Welcome Email
-            send_portal_email(
-                user_id=new_proxy,
-                template_name="WELCOME_ONBOARDING",
-                subject="Welcome to TeleSynapse Portal",
-                body=f"Hello {reg_name}, your account has been created. Status: {new_status}."
-            )
-
-            if new_status == "PENDING":
-                st.info("ℹ️ Doctor registration submitted! Status set to PENDING. Awaiting Admin Approval.")
+            if reg_role == "Doctor":
+                send_portal_email(
+                    user_id=new_proxy,
+                    template_name="VERIFY_EMAIL",
+                    subject="Verify your TeleRehab Email",
+                    body=f"Hello {r_name}, please click here to verify your email address: https://telerehab.com/verify?token={uuid.uuid4().hex[:8]}"
+                )
+                st.info("📩 Verification Email Dispatched! Step 1 Complete. Go to 'Email Verification Simulator' tab.")
             else:
-                st.success("🎉 Registration complete! OTP verified. You can now log in.")
+                st.success("🎉 Patient Account Created & Auto-Approved! You can log in immediately.")
 
-
-# ==========================================
-# 5. MODULE 2: PATIENT PORTAL & PHOTO CENTER
-# ==========================================
-
-elif menu == "👤 Patient Portal & Photo Center":
-    if curr_user["role"] != "patient":
-        st.warning("⚠️ Access Restricted. This view is for Patients only.")
-    else:
-        st.markdown("### 👤 Patient Clinical Hub & Photo Upload Center")
+    # SIMULATED EMAIL VERIFICATION TAB
+    with tab_verify:
+        st.markdown("#### ✉️ Doctor Email Verification Simulation (Step B)")
+        st.caption("In production, the doctor clicks the verification link in their email inbox.")
         
-        # Link-Only Header
+        unverified_doctors = {k: v for k, v in st.session_state["users_db"].items() if v["role"] == "doctor" and v["status"] == "EMAIL_UNVERIFIED"}
+        
+        if unverified_doctors:
+            for em, doc in unverified_doctors.items():
+                st.markdown(f"""
+                <div class="clinical-card">
+                    <div style="color:#00F5D4; font-weight:700;">Doctor: {doc['name']} ({em})</div>
+                    <div style="color:#94A3B8; font-size:0.82rem;">PHPC License: {doc['phpc_num']} | Status: <span class="status-badge-unverified">EMAIL_UNVERIFIED</span></div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if st.button(f"VERIFY EMAIL FOR {doc['name']}", key=f"v_{em}"):
+                    render_loader_component("Verifying Email Link Token...")
+                    doc["status"] = "PENDING"
+                    add_audit_log(doc["proxy_id"], "EMAIL_VERIFIED", "Email token verified. Status set to PENDING.")
+                    st.success("✅ Email Verified! Account status updated to PENDING (Awaiting Super Admin Approval).")
+                    st.rerun()
+        else:
+            st.info("🟢 No doctors awaiting email verification.")
+
+
+# ==========================================
+# 5. MODULE 2: SUPER ADMIN PORTAL (/admin/login)
+# ==========================================
+
+elif menu == "👑 Super Admin Portal (/admin/login)":
+    if curr_user["role"] != "super_admin":
+        st.warning("🔒 Access Denied. Super Admin privileges required.")
+    else:
+        st.markdown("### 👑 TeleSynapse Super Admin Command Panel")
+        st.caption("Manage Doctor Approval Pipeline, Security Trail, and System Outbox")
+
+        admin_tab1, admin_tab2, admin_tab3 = st.tabs(["🩺 Doctor Approval Requests", "🛡️ Audit Trail Logs", "📤 Masked Email Queue"])
+
+        # DOCTOR APPROVAL QUEUE
+        with admin_tab1:
+            st.markdown("#### New Doctor Registration Requests")
+            doctors_db = st.session_state["users_db"]
+            pending_docs = {k: v for k, v in doctors_db.items() if v["role"] == "doctor" and v["status"] == "PENDING"}
+
+            if pending_docs:
+                for doc_email, doc_info in pending_docs.items():
+                    st.markdown(f"""
+                    <div class="clinical-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <div style="color:#00F5D4; font-weight:800; font-size:1.15rem;">Doctor: {doc_info['name']}</div>
+                                <div style="color:#CBD5E1; font-size:0.88rem;">Email: <code>{doc_email}</code> | PHPC License #: <b style="color:#38BDF8;">{doc_info.get('phpc_num')}</b></div>
+                                <div style="color:#94A3B8; font-size:0.8rem; margin-top:4px;">Proxy ID: <code>{doc_info['proxy_id']}</code> | Status: <span class="status-badge-pending">PENDING APPROVAL</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    btn_c1, btn_c2, _ = st.columns([1, 1, 3])
+                    with btn_c1:
+                        if st.button(f"✅ APPROVE", key=f"app_{doc_email}"):
+                            render_loader_component("Approving Doctor & Activating Account...")
+                            doc_info["status"] = "ACTIVE"
+                            add_audit_log("SUPER_ADMIN", "DOCTOR_APPROVED", f"Approved {doc_email}")
+                            
+                            send_portal_email(
+                                user_id=doc_info["proxy_id"],
+                                template_name="DOCTOR_ACTIVATED",
+                                subject="Your TeleSynapse Doctor Account is Activated!",
+                                body=f"Congratulations Dr. {doc_info['name']}, your license has been verified. You can now log in."
+                            )
+                            st.success(f"Doctor {doc_info['name']} Approved!")
+                            st.rerun()
+
+                    with btn_c2:
+                        if st.button(f"❌ REJECT", key=f"rej_{doc_email}"):
+                            render_loader_component("Rejecting Application...")
+                            doc_info["status"] = "REJECTED"
+                            add_audit_log("SUPER_ADMIN", "DOCTOR_REJECTED", f"Rejected {doc_email}")
+                            st.error(f"Doctor Application Rejected.")
+                            st.rerun()
+            else:
+                st.success("🟢 No pending doctor approval requests. All doctors processed!")
+
+            # Display All Registered Doctors Status
+            st.markdown("---")
+            st.markdown("#### All Registered Doctors Status Summary")
+            all_docs = [v for k, v in doctors_db.items() if v["role"] == "doctor"]
+            if all_docs:
+                st.dataframe(pd.DataFrame(all_docs)[["name", "proxy_id", "status", "phpc_num"]], use_container_width=True)
+
+        # AUDIT TRAIL LOGS
+        with admin_tab2:
+            st.markdown("#### System Security Audit Logs")
+            logs = st.session_state.get("audit_logs", [])
+            if logs:
+                st.dataframe(pd.DataFrame(logs), use_container_width=True)
+            else:
+                st.info("No audit logs recorded yet.")
+
+        # EMAIL OUTBOX
+        with admin_tab3:
+            st.markdown("#### Masked Email Dispatch Outbox")
+            outbox = st.session_state.get("email_outbox", [])
+            if outbox:
+                st.dataframe(pd.DataFrame(outbox), use_container_width=True)
+            else:
+                st.info("Outbox is empty.")
+
+
+# ==========================================
+# 6. MODULE 3: PATIENT PORTAL
+# ==========================================
+
+elif menu == "👤 Patient Portal & Photo Suite":
+    if curr_user["role"] != "patient":
+        st.warning("⚠️ Access Restricted to Patient accounts.")
+    else:
+        st.markdown("### 👤 Patient Clinical Portal & Photo Center")
+        
         st.markdown("""
-        <div style="background:#1E293B; border:2px solid #059669; border-radius:16px; padding:18px; margin-bottom:20px;">
+        <div class="clinical-card" style="border-left: 5px solid #00F5D4;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                    <div style="color:#34D399; font-weight:800; font-size:1.2rem;">Assigned Doctor: Dr. Ayesha Malik</div>
+                    <div style="color:#00F5D4; font-weight:800; font-size:1.2rem;">Assigned Doctor: Dr. Ayesha Malik</div>
                     <div style="color:#94A3B8; font-size:0.85rem;">Doctor Proxy: <b>TS-D-004</b> | Your Proxy: <b>TS-P-001</b></div>
                 </div>
-                <div style="background:#0F172A; color:#38BDF8; font-size:0.75rem; font-weight:700; padding:6px 12px; border-radius:8px; border:1px solid #334155;">
-                    🔒 Zero Contact Exposure Policy Active
+                <div style="background:#080E1A; color:#38BDF8; font-size:0.75rem; font-weight:700; padding:6px 12px; border-radius:8px; border:1px solid #1E2E52;">
+                    🔒 Zero Contact Exposure Active
                 </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        col_p1, col_p2 = st.columns([1, 1])
-
-        with col_p1:
+        c_p1, c_p2 = st.columns(2)
+        with c_p1:
             st.markdown("#### 📸 Upload Progress Photo")
-            st.caption("Photos are compressed, auto-tagged by AI, and watermarked.")
-
-            photo_tag = st.selectbox("Photo Interval Tag:", ["Before Photo", "Week 1 Progress", "Week 2 Progress", "Week 3 Progress", "Week 4 Final"])
-            uploaded_file = st.file_uploader("Select Image (JPG/PNG - Max 2MB)", type=["jpg", "png", "jpeg"])
+            tag_choice = st.selectbox("Interval Tag:", ["Before Photo", "Week 1 Progress", "Week 2 Progress", "Week 3 Progress", "Week 4 Final"])
+            up_img = st.file_uploader("Upload Image (JPG/PNG)", type=["jpg", "png", "jpeg"])
 
             if st.button("UPLOAD & AUTO-TAG PHOTO"):
-                if uploaded_file:
-                    render_loader_component("Uploading Image to Encrypted Storage & Running AI Vision Tagging...")
-
-                    # Generate non-guessable UUID file name
-                    uuid_filename = f"storage_{uuid.uuid4().hex[:12]}.jpg"
-                    
-                    # Simulated AI tagging engine
+                if up_img:
+                    render_loader_component("Encrypting Photo & Auto-Tagging via AI Vision Engine...")
+                    uuid_fn = f"storage_{uuid.uuid4().hex[:10]}.jpg"
                     ai_tags = [
-                        "Detected: Knee Joint, Swelling: Minor, Flexion Angle: 105°",
-                        "Detected: Shoulder Flexion, Elevation: 140°, Alignment: Good",
-                        "Detected: Ankle Joint, Inflammation: Low, Range: 80%"
+                        "Detected: Knee Joint, Flexion: 95°, Swelling: Reduced",
+                        "Detected: Shoulder Joint, Elevation: 130°, Progress: Optimal"
                     ]
-                    selected_ai_tag = random.choice(ai_tags)
-
-                    new_photo_record = {
-                        "uuid_filename": uuid_filename,
-                        "tag": photo_tag,
-                        "ai_analysis": selected_ai_tag,
+                    
+                    record = {
+                        "uuid_filename": uuid_fn,
+                        "tag": tag_choice,
+                        "ai_analysis": random.choice(ai_tags),
                         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         "selected_for_report": True
                     }
@@ -468,231 +613,92 @@ elif menu == "👤 Patient Portal & Photo Center":
                     if curr_user["proxy_id"] not in st.session_state["patient_photos"]:
                         st.session_state["patient_photos"][curr_user["proxy_id"]] = []
 
-                    st.session_state["patient_photos"][curr_user["proxy_id"]].append(new_photo_record)
-                    add_audit_log(curr_user["proxy_id"], "PHOTO_UPLOAD", f"Uploaded {photo_tag} -> UUID: {uuid_filename}")
+                    st.session_state["patient_photos"][curr_user["proxy_id"]].append(record)
+                    add_audit_log(curr_user["proxy_id"], "PHOTO_UPLOAD", f"Uploaded {tag_choice}")
+                    st.success(f"✅ Photo Uploaded! UUID: `{uuid_fn}`")
 
-                    st.success(f"✅ Photo Uploaded Successfully! UUID: `{uuid_filename}`")
-                else:
-                    st.error("Please select a file first.")
-
-        with col_p2:
-            st.markdown("#### 🖼️ Your Uploaded Progress Gallery")
-            photos = st.session_state["patient_photos"].get(curr_user["proxy_id"], [])
-
-            if photos:
-                for idx, item in enumerate(photos):
+        with c_p2:
+            st.markdown("#### 🖼️ Encrypted Photo Gallery")
+            p_photos = st.session_state["patient_photos"].get(curr_user["proxy_id"], [])
+            if p_photos:
+                for item in p_photos:
                     st.markdown(f"""
-                    <div class="watermark-badge">
-                        <div style="color:#38BDF8; font-weight:700;">📌 {item['tag']}</div>
-                        <div style="color:#94A3B8; font-size:0.8rem;">UUID: <code>{item['uuid_filename']}</code> | {item['timestamp']}</div>
-                        <div style="color:#34D399; font-size:0.82rem; margin-top:6px;">🧠 <b>AI Tag:</b> {item['ai_analysis']}</div>
-                        <div class="watermark-overlay">TeleSynapse | {curr_user['proxy_id']} | Encrypted</div>
+                    <div style="background:#0B132B; border:1px dashed #00F5D4; border-radius:10px; padding:12px; margin-bottom:10px;">
+                        <div style="color:#00F5D4; font-weight:700;">📌 {item['tag']}</div>
+                        <div style="color:#94A3B8; font-size:0.78rem;">UUID: {item['uuid_filename']}</div>
+                        <div style="color:#38BDF8; font-size:0.82rem; margin-top:4px;">🧠 {item['ai_analysis']}</div>
                     </div>
                     """, unsafe_allow_html=True)
             else:
                 st.info("No photos uploaded yet.")
 
-        # In-Portal Chat
-        st.markdown("---")
-        st.markdown("#### 💬 Encrypted Portal Chat")
-        
-        chat_box = st.container(height=180)
-        for msg in st.session_state["chat_messages"]:
-            sender_label = "You (TS-P-001)" if msg["sender"] == "TS-P-001" else "Dr. Ayesha (TS-D-004)"
-            chat_box.write(f"**{sender_label}:** {msg['text']}")
-
-        with st.form("patient_chat_form", clear_on_submit=True):
-            chat_in = st.text_input("Type message to doctor:")
-            if st.form_submit_button("Send Encrypted Message"):
-                clean_msg, flagged = sanitize_portal_message(chat_in)
-                st.session_state["chat_messages"].append({"sender": curr_user["proxy_id"], "text": clean_msg})
-                
-                if flagged:
-                    add_audit_log(curr_user["proxy_id"], "CHAT_FLAGGED", f"Attempted contact leak: {chat_in}")
-                    st.toast("🛡️ Contact info auto-masked for privacy & safety.", icon="🔒")
-                
-                st.rerun()
-
 
 # ==========================================
-# 6. MODULE 3: DOCTOR DASHBOARD & GALLERY
+# 7. MODULE 4: DOCTOR DASHBOARD
 # ==========================================
 
-elif menu == "👨‍⚕️ Doctor Dashboard & Patient Gallery":
+elif menu == "👨‍⚕️ Doctor Dashboard & Gallery":
     if curr_user["role"] != "doctor":
-        st.warning("⚠️ Access Restricted. This view is for Doctors only.")
+        st.warning("⚠️ Access Restricted to Doctor accounts.")
     else:
-        st.markdown("### 👨‍⚕️ Doctor Clinical Workspace")
+        st.markdown("### 👨‍⚕️ Doctor Clinical Hub")
         
         st.markdown("""
-        <div style="background:#1E293B; border:2px solid #0284C7; border-radius:16px; padding:18px; margin-bottom:20px;">
+        <div class="clinical-card" style="border-left: 5px solid #0EA5E9;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
-                    <div style="color:#38BDF8; font-weight:800; font-size:1.2rem;">Active Patient: Ali Khan / Hassan Raza</div>
-                    <div style="color:#94A3B8; font-size:0.85rem;">Patient Proxy: <b>TS-P-001</b> | Condition: ACL Rehab & Flexion Recovery</div>
+                    <div style="color:#38BDF8; font-weight:800; font-size:1.2rem;">Patient: Hassan Raza</div>
+                    <div style="color:#94A3B8; font-size:0.85rem;">Patient Proxy: <b>TS-P-001</b> | Condition: ACL Flexion Recovery</div>
                 </div>
-                <div style="background:#0F172A; color:#34D399; font-size:0.75rem; font-weight:700; padding:6px 12px; border-radius:8px; border:1px solid #334155;">
-                    🔒 Contact Info Masked
+                <div style="background:#080E1A; color:#00F5D4; font-size:0.75rem; font-weight:700; padding:6px 12px; border-radius:8px; border:1px solid #1E2E52;">
+                    🔒 Masked Contact Mode
                 </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("#### 🖼️ Patient Clinical Photo Gallery (Select for PDF Report)")
-        
-        patient_photos = st.session_state["patient_photos"].get("TS-P-001", [])
+        st.markdown("#### 🖼️ Patient Photo Review & Report Selection")
+        pat_photos = st.session_state["patient_photos"].get("TS-P-001", [])
 
-        if patient_photos:
-            col_g1, col_g2 = st.columns(2)
-            for idx, pic in enumerate(patient_photos):
-                target_col = col_g1 if idx % 2 == 0 else col_g2
-                with target_col:
-                    st.markdown(f"""
-                    <div class="watermark-badge">
-                        <div style="color:#34D399; font-weight:700;">🏷️ {pic['tag']}</div>
-                        <div style="color:#64748B; font-size:0.75rem;">File: {pic['uuid_filename']}</div>
-                        <div style="color:#E2E8F0; font-size:0.82rem; margin:6px 0;">🧠 {pic['ai_analysis']}</div>
-                        <div class="watermark-overlay">TeleSynapse | TS-P-001</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    is_selected = st.checkbox(f"Include in Final Report", value=pic.get("selected_for_report", True), key=f"pic_sel_{idx}")
-                    pic["selected_for_report"] = is_selected
+        if pat_photos:
+            for idx, pic in enumerate(pat_photos):
+                st.markdown(f"""
+                <div class="clinical-card">
+                    <div style="color:#00F5D4; font-weight:700;">🏷️ {pic['tag']}</div>
+                    <div style="color:#CBD5E1; font-size:0.85rem;">🧠 {pic['ai_analysis']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                pic["selected_for_report"] = st.checkbox("Select for PDF Report", value=pic.get("selected_for_report", True), key=f"sel_{idx}")
         else:
-            st.info("No photos uploaded by patient yet.")
-
-        st.markdown("---")
-        st.markdown("#### 📧 Send Masked Portal Email to Patient")
-        with st.form("doctor_email_form"):
-            email_subj = st.text_input("Subject", value="Weekly Progress Review & Report Update")
-            email_body = st.text_area("Message Body", value="Dear Patient, your Week 1 flexion recovery shows good progress. Please keep performing the prescribed exercises.")
-            
-            if st.form_submit_button("DISPATCH MASKED EMAIL"):
-                render_loader_component("Transmitting Masked Email via TeleRehab Gateway...")
-                send_portal_email(
-                    user_id="TS-P-001",
-                    template_name="DOCTOR_DIRECT_MESSAGE",
-                    subject=email_subj,
-                    body=email_body
-                )
-                st.success("✉️ Email sent successfully via backend proxy! Patient contact remains masked.")
+            st.info("No photos available for review.")
 
 
 # ==========================================
-# 7. MODULE 4: AI REPORT GENERATOR
-# ==========================================
-
-elif menu == "📄 AI Report Generator (PDF Preview)":
-    st.markdown("### 📄 Clinical Progress & AI Report Engine")
-    st.caption("Generates HIPAA-Compliant Watermarked Report PDF for Patients")
-
-    photos = st.session_state["patient_photos"].get("TS-P-001", [])
-    selected_photos = [p for p in photos if p.get("selected_for_report", True)]
-
-    if st.button("⚙️ GENERATE CLINICAL REPORT PDF"):
-        render_loader_component("Compiling AI Vision Metrics, Watermarking Images & Rendering PDF...")
-        add_audit_log(curr_user["proxy_id"], "REPORT_GENERATED", f"Generated report with {len(selected_photos)} selected photos.")
-        st.success("🎉 Report PDF Generated & Automatically Emailed to Patient!")
-
-    # Live Report Preview
-    st.markdown("---")
-    st.markdown("#### 📑 Report Preview Window")
-
-    report_html = f"""
-    <div style="background:#FFFFFF; color:#1E293B; border-radius:12px; padding:30px; font-family:'Plus Jakarta Sans', sans-serif;">
-        <div style="display:flex; justify-content:space-between; border-bottom:2px solid #059669; padding-bottom:12px;">
-            <div>
-                <h2 style="color:#064E3B !important; margin:0;">TeleSynapse Rehabilitation Portal</h2>
-                <div style="font-size:0.85rem; color:#64748B;">Official Tele-Rehab Progress Report</div>
-            </div>
-            <div style="text-align:right; font-size:0.8rem; color:#64748B;">
-                <div><b>Date:</b> {datetime.datetime.now().strftime("%d-%b-%Y")}</div>
-                <div><b>Report ID:</b> REP-{random.randint(10000,99999)}</div>
-            </div>
-        </div>
-
-        <div style="margin:20px 0; font-size:0.9rem; display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#F8FAFC; padding:14px; border-radius:8px;">
-            <div><b>Patient Proxy ID:</b> TS-P-001</div>
-            <div><b>Attending Doctor:</b> Dr. Ayesha Malik (TS-D-004)</div>
-            <div><b>Condition:</b> ACL Flexion Recovery</div>
-            <div><b>Overall Recovery Status:</b> <span style="color:#059669; font-weight:700;">ON TRACK (85%)</span></div>
-        </div>
-
-        <h4 style="color:#0284C7 !important;">Selected Progress Photos & AI Analytics</h4>
-    """
-
-    for p in selected_photos:
-        report_html += f"""
-        <div style="border:1px solid #CBD5E1; border-radius:8px; padding:12px; margin-bottom:10px; background:#FAFAFA;">
-            <div style="font-weight:700; color:#0F172A;">{p['tag']} <span style="font-weight:400; font-size:0.75rem; color:#64748B;">({p['timestamp']})</span></div>
-            <div style="font-size:0.85rem; color:#059669; margin-top:4px;"><b>AI Findings:</b> {p['ai_analysis']}</div>
-            <div style="font-size:0.7rem; color:#94A3B8; font-family:monospace; margin-top:4px;">Watermark Token: TeleSynapse-TS-P-001-Encrypted-PDF</div>
-        </div>
-        """
-
-    report_html += """
-        <div style="margin-top:30px; border-top:1px dashed #CBD5E1; padding-top:10px; font-size:0.75rem; color:#94A3B8; text-align:center;">
-            This document is cryptographically verified by TeleSynapse Health Systems. Confidential Medical Record.
-        </div>
-    </div>
-    """
-
-    st.markdown(report_html, unsafe_allow_html=True)
-
-
-# ==========================================
-# 8. MODULE 5: SENIOR ADMIN & SECURITY TRAIL
+# 8. MODULE 5: AI REPORT BUILDER
 # ==========================================
 
 else:
-    st.markdown("### 📊 Senior Admin & Security Control Center")
+    st.markdown("### 📄 AI Progress Report Generator")
+    st.caption("Generates HIPAA-Compliant Watermarked Report PDF")
 
-    t_adm1, t_adm2, t_adm3 = st.tabs(["🛡️ Audit Trail Logs", "✉️ Masked Email Outbox", "👨‍⚕️ Doctor Approval Management"])
+    photos = st.session_state["patient_photos"].get("TS-P-001", [])
+    selected_pics = [p for p in photos if p.get("selected_for_report", True)]
 
-    with t_adm1:
-        st.markdown("#### System Security Audit Logs")
-        logs = st.session_state.get("audit_logs", [])
-        if logs:
-            df_logs = pd.DataFrame(logs)
-            st.dataframe(df_logs, use_container_width=True)
-        else:
-            st.info("No audit logs recorded yet.")
+    if st.button("⚙️ GENERATE REPORT PDF"):
+        render_loader_component("Compiling AI Vision Metrics & Watermarking PDF...")
+        add_audit_log(curr_user["proxy_id"], "REPORT_GENERATED", f"Generated report with {len(selected_pics)} images.")
+        st.success("🎉 Report PDF Generated & Sent to Patient Inbox!")
 
-    with t_adm2:
-        st.markdown("#### Backend Masked Email Queue")
-        outbox = st.session_state.get("email_outbox", [])
-        if outbox:
-            df_outbox = pd.DataFrame(outbox)
-            st.dataframe(df_outbox, use_container_width=True)
-        else:
-            st.info("Outbox is empty.")
-
-    with t_adm3:
-        st.markdown("#### Doctor Account Approval Requests")
-        users = st.session_state["users_db"]
-        pending_doctors = {k: v for k, v in users.items() if v["role"] == "doctor" and v["status"] == "PENDING"}
-
-        if pending_doctors:
-            for email, d_data in pending_doctors.items():
-                col_a1, col_a2 = st.columns([3, 1])
-                with col_a1:
-                    st.write(f"**{d_data['name']}** ({email}) | License: `{d_data.get('phpc_num')}` | Proxy: `{d_data['proxy_id']}`")
-                with col_a2:
-                    if st.button("APPROVE DOCTOR", key=f"app_{email}"):
-                        render_loader_component("Updating Credentials & Activating Doctor Account...")
-                        d_data["status"] = "ACTIVE"
-                        add_audit_log("ADMIN", "DOCTOR_APPROVED", f"Approved account for {email}")
-                        
-                        send_portal_email(
-                            user_id=d_data["proxy_id"],
-                            template_name="DOCTOR_ACTIVATED",
-                            subject="Your Doctor Account is Activated!",
-                            body="Your license has been verified. You may now log in to your dashboard."
-                        )
-                        st.success("Approved!")
-                        st.rerun()
-        else:
-            st.success("🟢 No pending doctor approvals.")
+    st.markdown("---")
+    st.markdown("#### 📑 PDF Preview Frame")
+    st.markdown(f"""
+    <div style="background:#FFFFFF; color:#0F172A; border-radius:12px; padding:26px;">
+        <h3 style="color:#0284C7 !important;">TeleSynapse Clinical Recovery Report</h3>
+        <div><b>Patient Proxy:</b> TS-P-001 | <b>Doctor:</b> Dr. Ayesha Malik (TS-D-004)</div>
+        <hr>
+        <div><b>Active Images Included:</b> {len(selected_pics)}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # ==========================================
@@ -700,7 +706,7 @@ else:
 # ==========================================
 
 st.markdown("""
-<div style="text-align:center; color:#64748B; font-size:0.8rem; margin-top:40px; padding-top:16px; border-top:1px solid #1E293B;">
+<div style="text-align:center; color:#64748B; font-size:0.8rem; margin-top:40px; padding-top:16px; border-top:1px solid #1E2E52;">
     By using TeleSynapse, all sessions and communication are securely managed within the portal to protect your medical records.
 </div>
 """, unsafe_allow_html=True)
