@@ -2,23 +2,25 @@ import streamlit as st
 import sqlite3
 import json
 from datetime import datetime, date
+import pandas as pd
 
 # ==============================================================================
-# 1. PAGE CONFIGURATION & SKY BLUE / DARK SLATE THEMING
+# 1. PAGE CONFIGURATION & TELESYNAPSE EXACT THEME
 # ==============================================================================
 st.set_page_config(
-    page_title="Tekerehab | Sky Clinical Portal",
+    page_title="TeleSynapse | Tele-Rehab Portal",
     page_icon="🩺",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-DB_FILE = "tekerehab_clinical.db"
+DB_FILE = "telesynapse_rehab.db"
 
-def inject_sky_theme():
+def inject_telesynapse_theme():
     st.markdown("""<style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
+/* Hide Streamlit default chrome */
 #MainMenu, header, footer, [data-testid="stHeader"] { 
     visibility: hidden !important; 
     height: 0px !important;
@@ -29,85 +31,72 @@ def inject_sky_theme():
 }
 
 html, body, [class*="css"], .stMarkdown {
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    color: #F1F5F9 !important;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
-/* App Background: Dark Slate / Deep Blue to replace stark white */
+/* Main Dashboard Background (Light Mint / Soft Gray-Teal) */
 .stApp {
-    background: linear-gradient(135deg, #0B132B 0%, #0F172A 100%) !important;
+    background-color: #F2F8F6 !important;
 }
 
-/* Sidebar Styling */
+/* Sidebar Custom Styling */
 [data-testid="stSidebar"] {
-    background-color: #091026 !important;
-    border-right: 1px solid #1E293B !important;
+    background-color: #07152B !important;
+    border-right: 1px solid #0F2342 !important;
+    padding-top: 10px;
 }
 
 [data-testid="stSidebar"] * {
-    color: #E2E8F0 !important;
+    color: #94A3B8 !important;
 }
 
-[data-testid="stSidebar"] label {
-    color: #38BDF8 !important;
-    font-weight: 700 !important;
-    font-size: 0.8rem !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
+/* Streamlit Radio Buttons disguised as Sidebar Nav */
+[data-testid="stSidebar"] .stRadio > div {
+    gap: 6px;
 }
 
-/* Form Inputs & Selectboxes */
-div[data-baseweb="select"] > div, .stTextInput input, .stTextArea textarea {
-    background-color: #1E293B !important;
-    color: #F8FAFC !important;
-    border: 1px solid #334155 !important;
-    border-radius: 8px !important;
+[data-testid="stSidebar"] .stRadio label {
+    background-color: transparent !important;
+    color: #94A3B8 !important;
+    padding: 12px 16px !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    transition: all 0.2s ease-in-out !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
 }
 
-/* Tab Styling - Sky Blue Highlights */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
-    background-color: #0F172A;
-    padding: 8px;
-    border-radius: 12px;
-    border: 1px solid #1E293B;
-}
-
-.stTabs [data-baseweb="tab"] {
-    height: 44px;
-    border-radius: 8px;
-    color: #94A3B8;
-    font-weight: 600;
-    font-size: 0.88rem;
-    padding: 0px 16px;
-    border: none !important;
-}
-
-.stTabs [aria-selected="true"] {
-    background-color: #0EA5E9 !important;
+[data-testid="stSidebar"] .stRadio label:hover {
+    background-color: #0E223D !important;
     color: #FFFFFF !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3) !important;
 }
 
-/* Buttons */
+[data-testid="stSidebar"] .stRadio div[aria-checked="true"] label {
+    background-color: #0C3646 !important;
+    color: #00F2FE !important;
+    font-weight: 700 !important;
+    border-right: 3px solid #00F2FE !important;
+}
+
+/* Card Styling & Shadows */
+.ts-card {
+    background-color: #FFFFFF;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+}
+
 .stButton > button {
-    background-color: #0EA5E9 !important;
-    color: #FFFFFF !important;
+    border-radius: 10px !important;
     font-weight: 700 !important;
-    border: none !important;
-    border-radius: 8px !important;
-    padding: 10px 20px !important;
     transition: all 0.2s ease !important;
-}
-
-.stButton > button:hover {
-    background-color: #38BDF8 !important;
-    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4) !important;
 }
 </style>""", unsafe_allow_html=True)
 
-inject_sky_theme()
+inject_telesynapse_theme()
 
 # ==============================================================================
 # 2. DATABASE PERSISTENCE & INITIALIZATION
@@ -122,33 +111,23 @@ def init_db():
     
     cur.execute("""
     CREATE TABLE IF NOT EXISTS patients (
-        patient_id TEXT PRIMARY KEY, full_name TEXT, date_of_birth TEXT, sex TEXT, country TEXT, preferred_language TEXT,
-        phone TEXT, email TEXT, emergency_contact_name TEXT, emergency_contact_phone TEXT, diagnosis TEXT, diagnosis_date TEXT,
-        affected_organ TEXT, laterality TEXT, injury_type TEXT, cause_mechanism TEXT, medical_history TEXT, surgery_history TEXT,
-        current_medications TEXT, allergies TEXT, previous_rehab TEXT, functional_limitations TEXT, pain_info TEXT, mobility_limitations TEXT,
-        referring_physician TEXT, assigned_rehabilitator TEXT, clinical_notes TEXT, medical_reports_uploaded TEXT, document_links TEXT, consent_authorization INT
+        patient_id TEXT PRIMARY KEY, full_name TEXT, date_of_birth TEXT, sex TEXT, country TEXT,
+        phone TEXT, email TEXT, diagnosis TEXT, diagnosis_date TEXT, affected_organ TEXT,
+        laterality TEXT, assigned_rehabilitator TEXT, clinical_notes TEXT
     )
     """)
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS clinical_assessments (
-        assessment_id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id TEXT, rom_degrees TEXT DEFAULT NULL, pain_score TEXT DEFAULT NULL,
-        strength_grade TEXT DEFAULT NULL, gait_status TEXT DEFAULT NULL, functional_score TEXT DEFAULT NULL, swelling_status TEXT DEFAULT NULL,
-        balance_score TEXT DEFAULT NULL, assessment_date TEXT, FOREIGN KEY(patient_id) REFERENCES patients(patient_id)
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS rehab_plans (
-        plan_id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id TEXT, assigned_by TEXT, phase_name TEXT, effective_date TEXT, activities_json TEXT,
-        FOREIGN KEY(patient_id) REFERENCES patients(patient_id)
+        assessment_id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id TEXT, knee_flexion TEXT,
+        shoulder_abduction TEXT, gait_symmetry TEXT, sessions_count INT, assessment_date TEXT
     )
     """)
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS teleconsultations (
-        consultation_id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id TEXT, provider TEXT, meeting_url TEXT, meeting_id TEXT,
-        scheduled_date TEXT, scheduled_time TEXT, timezone TEXT, host_rehabilitator TEXT, notes TEXT, FOREIGN KEY(patient_id) REFERENCES patients(patient_id)
+        consultation_id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id TEXT, provider TEXT,
+        meeting_url TEXT, scheduled_date TEXT, scheduled_time TEXT, host_rehabilitator TEXT
     )
     """)
 
@@ -156,348 +135,306 @@ def init_db():
     if cur.fetchone()[0] == 0:
         cur.execute("""
         INSERT INTO patients (
-            patient_id, full_name, date_of_birth, sex, country, preferred_language, phone, email, emergency_contact_name, emergency_contact_phone,
-            diagnosis, diagnosis_date, affected_organ, laterality, injury_type, cause_mechanism, medical_history, surgery_history, current_medications,
-            allergies, previous_rehab, functional_limitations, pain_info, mobility_limitations, referring_physician, assigned_rehabilitator, clinical_notes,
-            medical_reports_uploaded, document_links, consent_authorization
+            patient_id, full_name, date_of_birth, sex, country, phone, email, diagnosis,
+            diagnosis_date, affected_organ, laterality, assigned_rehabilitator, clinical_notes
         ) VALUES (
-            'TRP-1001', 'Muhammad Hassan Raza Attari', '2005-10-14', 'Male', 'Pakistan', 'English', '+92 300 1234567', 'hassan@example.com', 'Family Member', '+92 300 7654321',
-            'Post-Op Anterior Cruciate Ligament (ACL) Reconstruction', '2026-08-10', 'Knee Joint', 'Left', 'Surgical Post-Op', 'Sports Injury', 'None reported', 'Left Knee ACL Reconstruction (Aug 2026)',
-            'Analgesics (as needed)', 'None reported', 'None', 'Inability to fully flex knee past 90 degrees', 'Moderate discomfort on weight bearing', 'Requires single crutch support',
-            'Dr. Shahzaib Mughal', 'Dr. Ahmed Khan (PT)', 'Patient demonstrating steady post-op recovery. Avoid forced extension.', 'MRI_PreOp_Knee.pdf, PostOp_XRay.pdf',
-            'https://clinical-records.example.com/TRP-1001', 1
+            'TS-P-811', 'Muhammad Hassan Raza Attari', '2005-10-14', 'Male', 'Pakistan',
+            '+92 300 1234567', 'hassan@example.com', 'Post-Op ACL Reconstruction',
+            '2026-08-10', 'Knee Joint', 'Left', 'Dr. Shahzaib Mughal',
+            'Patient in Phase 2 recovery. Focus on ROM exercises and gait balance.'
         )
         """)
 
-        activities = json.dumps([
-            {"task": "Passive Knee Extension on Bolster", "reps": "3 sets of 10 reps", "frequency": "2x Daily"},
-            {"task": "Seated Heel Slides to Tolerance", "reps": "15 reps", "frequency": "3x Daily"},
-            {"task": "Isometric Quadriceps Setting", "reps": "10-second holds x 10", "frequency": "2x Daily"}
-        ])
-        cur.execute("INSERT INTO rehab_plans (patient_id, assigned_by, phase_name, effective_date, activities_json) VALUES ('TRP-1001', 'Dr. Ahmed Khan', 'Phase 2 — Mobility & Strength', '2026-09-01', ?)", (activities,))
+        cur.execute("""
+        INSERT INTO clinical_assessments (patient_id, knee_flexion, shoulder_abduction, gait_symmetry, sessions_count, assessment_date)
+        VALUES ('TS-P-811', '95° Flexion', '110° Abduction', '88% Symmetry', 0, '2026-09-08')
+        """)
 
         cur.execute("""
-        INSERT INTO teleconsultations (
-            patient_id, provider, meeting_url, meeting_id, scheduled_date, scheduled_time, timezone, host_rehabilitator, notes
-        ) VALUES (
-            'TRP-1001', 'Enterprise Video Portal', 'https://meet.jit.si/Tekerehab-TRP-1001-Clinical', 'TRP-CONF-8821', '2026-09-12', '14:30', 'PKT (UTC+5)', 'Dr. Ahmed Khan',
-            'Review range of motion progress and adjust quadriceps loading parameters.'
-        )
+        INSERT INTO teleconsultations (patient_id, provider, meeting_url, scheduled_date, scheduled_time, host_rehabilitator)
+        VALUES ('TS-P-811', 'TeleSynapse HD Video', 'https://meet.jit.si/TeleSynapse-TS-P-811', '2026-09-12', '14:30', 'Dr. Shahzaib Mughal')
         """)
         conn.commit()
 
 init_db()
 
-def fetch_patient_record(patient_id):
+def fetch_patient_data(patient_id="TS-P-811"):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT * FROM patients WHERE patient_id = ?", (patient_id,))
     row = cur.fetchone()
-    return dict(zip([col[0] for col in cur.description], row)) if row else None
-
-def fetch_latest_assessment(patient_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM clinical_assessments WHERE patient_id = ? ORDER BY assessment_id DESC LIMIT 1", (patient_id,))
-    row = cur.fetchone()
-    return dict(zip([col[0] for col in cur.description], row)) if row else None
-
-def fetch_rehab_plan(patient_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM rehab_plans WHERE patient_id = ? ORDER BY plan_id DESC LIMIT 1", (patient_id,))
-    row = cur.fetchone()
-    if not row:
-        return None
-    res = dict(zip([col[0] for col in cur.description], row))
-    if res.get('activities_json'):
-        res['activities'] = json.loads(res['activities_json'])
-    return res
-
-def fetch_teleconsultation(patient_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM teleconsultations WHERE patient_id = ? ORDER BY consultation_id DESC LIMIT 1", (patient_id,))
-    row = cur.fetchone()
-    return dict(zip([col[0] for col in cur.description], row)) if row else None
-
-# ==============================================================================
-# 3. AUTHENTICATION / LOGIN PORTAL SESSION STATE
-# ==============================================================================
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
-if "user_role" not in st.session_state:
-    st.session_state["user_role"] = "Patient"
-if "patient_id" not in st.session_state:
-    st.session_state["patient_id"] = "TRP-1001"
-
-# LOGIN SCREEN
-if not st.session_state["authenticated"]:
-    st.markdown("""<div style="max-width: 480px; margin: 60px auto 20px auto; text-align: center;">
-<div style="background-color: #0EA5E9; display: inline-block; padding: 12px 18px; border-radius: 16px; margin-bottom: 12px; box-shadow: 0 0 20px rgba(14, 165, 233, 0.4);">
-<span style="font-size: 2rem;">🩺</span>
-</div>
-<h1 style="color: #38BDF8 !important; font-size: 2rem; font-weight: 800; margin: 0;">Tekerehab Portal</h1>
-<p style="color: #94A3B8 !important; font-size: 0.95rem; margin-top: 6px;">Enterprise Physical Rehabilitation Platform</p>
-</div>""", unsafe_allow_html=True)
-
-    st.markdown("""<div style="max-width: 480px; margin: 0 auto; background-color: #1E293B; border: 1px solid #0EA5E9; border-radius: 16px; padding: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
-<h3 style="color: #F8FAFC !important; margin: 0 0 20px 0; text-align: center; font-size: 1.2rem; font-weight: 700;">Sign In to Your Account</h3>
-</div>""", unsafe_allow_html=True)
-
-    with st.form("login_form"):
-        role = st.selectbox("Select Access Role", ["Patient", "Rehabilitator / Doctor"])
-        user_input = st.text_input("User ID / Patient Record ID", value="TRP-1001")
-        password = st.text_input("Password", type="password", value="••••••••")
-        
-        submit_login = st.form_submit_button("Launch Portal Dashboard 🚀", use_container_width=True)
-        
-        if submit_login:
-            st.session_state["authenticated"] = True
-            st.session_state["user_role"] = role
-            st.session_state["patient_id"] = user_input
-            st.rerun()
-            
-    st.markdown("""<div style="text-align: center; margin-top: 20px; color: #64748B; font-size: 0.8rem;">
-Protected System • HIPAA & Clinical Data Compliant
-</div>""", unsafe_allow_html=True)
-    st.stop()
-
-# ==============================================================================
-# 4. DASHBOARD VIEW & SIDEBAR
-# ==============================================================================
-logged_patient_id = st.session_state["patient_id"]
-portal_role = st.session_state["user_role"]
-
-p = fetch_patient_record(logged_patient_id)
-assessment = fetch_latest_assessment(logged_patient_id)
-plan = fetch_rehab_plan(logged_patient_id)
-tele = fetch_teleconsultation(logged_patient_id)
-
-with st.sidebar:
-    st.markdown("""<div style="padding: 10px 0 15px 0; border-bottom: 1px solid #1E293B; margin-bottom: 15px;">
-<h2 style="color:#38BDF8 !important; font-size:1.3rem; font-weight:800; margin:0;">Tekerehab Portal</h2>
-<p style="color:#0EA5E9 !important; font-size:0.75rem; font-weight:700; margin:4px 0 0 0; letter-spacing: 0.5px;">SKY CLINICAL DASHBOARD</p>
-</div>""", unsafe_allow_html=True)
-
-    st.markdown(f"**Logged User:** {st.session_state['user_role']}")
-    st.markdown(f"**Active ID:** `{logged_patient_id}`")
-
-    if st.button("🔒 Sign Out / Switch User", use_container_width=True):
-        st.session_state["authenticated"] = False
-        st.rerun()
-
-    st.markdown("<hr style='border-color: #1E293B; margin: 16px 0;'>", unsafe_allow_html=True)
-    selected_language = st.selectbox("Preferred Language", ["English", "Urdu", "Arabic", "Spanish", "French"])
-    timezone_setting = st.selectbox("Time Zone", ["PKT (UTC+5)", "EST (UTC-5)", "AST (UTC+3)", "GMT (UTC+0)", "CET (UTC+1)"])
-
-# Calculate Profile Completion %
-def get_completion_pct(p, assessment, tele):
-    if not p: return 0
-    checks = [
-        bool(p.get('full_name')), bool(p.get('diagnosis')),
-        bool(p.get('affected_organ')), bool(p.get('medical_reports_uploaded')),
-        bool(assessment and assessment.get('rom_degrees')), bool(tele and tele.get('meeting_url'))
-    ]
-    return int((sum(checks) / len(checks)) * 100)
-
-completion_pct = get_completion_pct(p, assessment, tele)
-
-# APP HEADER DASHBOARD BANNER
-st.markdown(f"""<div style="background-color: #1E293B; border: 1px solid #0EA5E9; border-radius: 14px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(14, 165, 233, 0.15);">
-<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-<div>
-<span style="background-color: #0EA5E9; color: #FFFFFF; font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 6px; text-transform: uppercase;">Clinical Dashboard</span>
-<h1 style="font-size: 1.6rem; font-weight: 800; color: #F8FAFC !important; margin: 6px 0 0 0;">Welcome, {p['full_name'] if p else 'Patient'}</h1>
-<p style="color: #38BDF8 !important; font-size: 0.88rem; margin: 4px 0 0 0; font-weight: 600;">Record ID: {logged_patient_id} • Assigned Rehabilitator: {p['assigned_rehabilitator'] if p else 'N/A'}</p>
-</div>
-<div style="text-align: right; background-color: #0F172A; padding: 10px 18px; border-radius: 10px; border: 1px solid #334155;">
-<span style="font-size: 0.75rem; font-weight: 700; color: #94A3B8 !important; text-transform: uppercase;">Profile Completion</span><br>
-<span style="font-size: 1.3rem; font-weight: 800; color: #38BDF8 !important;">{completion_pct}% Complete</span>
-</div>
-</div>
-</div>""", unsafe_allow_html=True)
-
-# DASHBOARD KPI METRIC CARDS
-col_kpi1, col_kpi2, col_kpi3, col_kpi4 = st.columns(4)
-
-with col_kpi1:
-    st.markdown(f"""<div style="background-color: #1E293B; border-left: 4px solid #38BDF8; border-radius: 10px; padding: 14px; border: 1px solid #334155;">
-<div style="font-size: 0.75rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Active Diagnosis</div>
-<div style="font-size: 0.95rem; font-weight: 700; color: #F8FAFC !important; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{p['diagnosis'] if p else 'N/A'}</div>
-<div style="font-size: 0.75rem; color: #94A3B8 !important; margin-top: 2px;">Since {p['diagnosis_date'] if p else 'N/A'}</div>
-</div>""", unsafe_allow_html=True)
-
-with col_kpi2:
-    st.markdown(f"""<div style="background-color: #1E293B; border-left: 4px solid #0EA5E9; border-radius: 10px; padding: 14px; border: 1px solid #334155;">
-<div style="font-size: 0.75rem; font-weight: 700; color: #0EA5E9 !important; text-transform: uppercase;">Current Phase</div>
-<div style="font-size: 0.95rem; font-weight: 700; color: #F8FAFC !important; margin-top: 4px;">{plan['phase_name'] if plan else 'Phase 1'}</div>
-<div style="font-size: 0.75rem; color: #94A3B8 !important; margin-top: 2px;">Effective {plan['effective_date'] if plan else 'N/A'}</div>
-</div>""", unsafe_allow_html=True)
-
-with col_kpi3:
-    st.markdown(f"""<div style="background-color: #1E293B; border-left: 4px solid #0284C7; border-radius: 10px; padding: 14px; border: 1px solid #334155;">
-<div style="font-size: 0.75rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Latest ROM Assessment</div>
-<div style="font-size: 0.95rem; font-weight: 700; color: #F8FAFC !important; margin-top: 4px;">{assessment['rom_degrees'] if (assessment and assessment.get('rom_degrees')) else 'Pending'}</div>
-<div style="font-size: 0.75rem; color: #94A3B8 !important; margin-top: 2px;">Pain Score: {assessment['pain_score'] if assessment else 'N/A'}</div>
-</div>""", unsafe_allow_html=True)
-
-with col_kpi4:
-    st.markdown(f"""<div style="background-color: #1E293B; border-left: 4px solid #38BDF8; border-radius: 10px; padding: 14px; border: 1px solid #334155;">
-<div style="font-size: 0.75rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Teleconsultation</div>
-<div style="font-size: 0.95rem; font-weight: 700; color: #F8FAFC !important; margin-top: 4px;">{tele['scheduled_date'] if tele else 'None'}</div>
-<div style="font-size: 0.75rem; color: #94A3B8 !important; margin-top: 2px;">Time: {tele['scheduled_time'] if tele else 'N/A'}</div>
-</div>""", unsafe_allow_html=True)
-
-st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
-
-# ==============================================================================
-# 5. DASHBOARD NAVIGATION TABS
-# ==============================================================================
-tab_titles = ["📊 Overview", "📋 Patient Demographics", "📊 Rehab Assessment", "💪 Care Plan", "📹 Teleconsultation"]
-if portal_role == "Rehabilitator / Doctor":
-    tab_titles.append("⚙️ Doctor Console")
-
-tabs = st.tabs(tab_titles)
-
-# TAB 0: EXECUTIVE OVERVIEW
-with tabs[0]:
-    st.markdown("### Clinical Overview & Status Summary")
-    ov_c1, ov_c2 = st.columns([2, 1])
+    p = dict(zip([col[0] for col in cur.description], row)) if row else {}
     
-    with ov_c1:
-        st.markdown(f"""<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
-<h4 style="color: #38BDF8 !important; margin: 0 0 12px 0;">Patient Summary Card</h4>
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem;">
-<div><span style="color: #94A3B8;">Full Name:</span> <strong style="color:#F8FAFC;">{p['full_name']}</strong></div>
-<div><span style="color: #94A3B8;">DOB / Age:</span> <strong style="color:#F8FAFC;">{p['date_of_birth']}</strong></div>
-<div><span style="color: #94A3B8;">Affected Region:</span> <strong style="color:#F8FAFC;">{p['affected_organ']} ({p['laterality']})</strong></div>
-<div><span style="color: #94A3B8;">Injury Type:</span> <strong style="color:#F8FAFC;">{p['injury_type']}</strong></div>
-<div><span style="color: #94A3B8;">Referring Doctor:</span> <strong style="color:#F8FAFC;">{p['referring_physician']}</strong></div>
-<div><span style="color: #94A3B8;">Contact:</span> <strong style="color:#F8FAFC;">{p['phone']}</strong></div>
+    cur.execute("SELECT * FROM clinical_assessments WHERE patient_id = ? ORDER BY assessment_id DESC LIMIT 1", (patient_id,))
+    row_a = cur.fetchone()
+    a = dict(zip([col[0] for col in cur.description], row_a)) if row_a else {}
+
+    cur.execute("SELECT * FROM teleconsultations WHERE patient_id = ? ORDER BY consultation_id DESC LIMIT 1", (patient_id,))
+    row_t = cur.fetchone()
+    t = dict(zip([col[0] for col in cur.description], row_t)) if row_t else {}
+
+    return p, a, t
+
+patient, assessment, tele_session = fetch_patient_data()
+
+# ==============================================================================
+# 3. SIDEBAR NAVIGATION & USER PROFILE PILL
+# ==============================================================================
+with st.sidebar:
+    # TeleSynapse Logo Header
+    st.markdown("""<div style="display: flex; align-items: center; gap: 12px; padding: 10px 8px 20px 8px;">
+<div style="background-color: #00CDBE; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#07152B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+</div>
+<div>
+<h2 style="color: #FFFFFF !important; font-size: 1.15rem; font-weight: 800; margin: 0; letter-spacing: -0.3px;">TeleSynapse</h2>
+<p style="color: #00CDBE !important; font-size: 0.68rem; font-weight: 800; margin: 0; letter-spacing: 1px; text-transform: uppercase;">TELE-REHAB</p>
 </div>
 </div>""", unsafe_allow_html=True)
 
-    with ov_c2:
-        st.markdown(f"""<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 20px; text-align: center;">
-<h4 style="color: #38BDF8 !important; margin: 0 0 8px 0;">Teleconsult Portal</h4>
-<p style="font-size: 0.85rem; color: #94A3B8;">Next scheduled video session with your clinical team.</p>
-<a href="{tele['meeting_url'] if tele else '#'}" target="_blank" style="background-color: #0EA5E9; color: white !important; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 700; display: inline-block; margin-top: 8px;">
-Launch Session 📹
-</a>
-</div>""", unsafe_allow_html=True)
-
-# TAB 1: DEMOGRAPHICS
-with tabs[1]:
-    st.markdown("### Patient Demographics & Complete Clinical Record")
-    if p:
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.markdown(f"**Full Name:** {p['full_name']}")
-            st.markdown(f"**Patient ID:** {p['patient_id']}")
-            st.markdown(f"**Date of Birth / Age:** {p['date_of_birth']}")
-            st.markdown(f"**Sex:** {p['sex']}")
-            st.markdown(f"**Country:** {p['country']}")
-            st.markdown(f"**Preferred Language:** {p['preferred_language']}")
-            st.markdown(f"**Contact Phone:** {p['phone']}")
-            st.markdown(f"**Email:** {p['email']}")
-            st.markdown(f"**Emergency Contact:** {p['emergency_contact_name']} ({p['emergency_contact_phone']})")
-
-        with col_b:
-            st.markdown(f"**Diagnosis:** {p['diagnosis']}")
-            st.markdown(f"**Diagnosis Date:** {p['diagnosis_date']}")
-            st.markdown(f"**Affected Body Region:** {p['affected_organ']}")
-            st.markdown(f"**Laterality:** {p['laterality']}")
-            st.markdown(f"**Injury / Condition Type:** {p['injury_type']}")
-            st.markdown(f"**Cause / Mechanism:** {p['cause_mechanism']}")
-            st.markdown(f"**Referring Physician:** {p['referring_physician']}")
-            st.markdown(f"**Assigned Rehabilitator:** {p['assigned_rehabilitator']}")
-
-        st.markdown("<hr style='border-color: #334155;'>", unsafe_allow_html=True)
-        st.markdown("#### Medical History & Functional Limitations")
-        m1, m2 = st.columns(2)
-        with m1:
-            st.markdown(f"**Relevant Medical History:** {p['medical_history']}")
-            st.markdown(f"**Surgery / Procedure History:** {p['surgery_history']}")
-            st.markdown(f"**Current Medications:** {p['current_medications']}")
-            st.markdown(f"**Allergies:** {p['allergies']}")
-        with m2:
-            st.markdown(f"**Functional Limitations:** {p['functional_limitations']}")
-            st.markdown(f"**Pain Characteristics:** {p['pain_info']}")
-            st.markdown(f"**Mobility Limitations:** {p['mobility_limitations']}")
-            st.markdown(f"**Clinical Notes:** {p['clinical_notes']}")
-
-# TAB 2: REHAB ASSESSMENT
-with tabs[2]:
-    st.markdown("### Clinical Assessment & Range of Motion Metrics")
-    rom_val = assessment['rom_degrees'] if (assessment and assessment.get('rom_degrees')) else "Not assessed yet"
-    pain_val = assessment['pain_score'] if (assessment and assessment.get('pain_score')) else "Not assessed yet"
-    str_val = assessment['strength_grade'] if (assessment and assessment.get('strength_grade')) else "Not assessed yet"
-    fn_val = assessment['functional_score'] if (assessment and assessment.get('functional_score')) else "Not assessed yet"
-
-    st.markdown(f"""<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
-<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 18px;">
-<div style="font-size: 0.8rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Range of Motion (ROM)</div>
-<div style="font-size: 1.35rem; font-weight: 800; color: #F8FAFC !important; margin-top: 6px;">{rom_val}</div>
+    # User Profile Pill Card
+    st.markdown(f"""<div style="background-color: #0C1E38; border: 1px solid #142C4F; border-radius: 12px; padding: 12px; margin-bottom: 24px; display: flex; align-items: center; gap: 12px;">
+<div style="background-color: #0284C7; color: #FFFFFF; width: 36px; height: 36px; border-radius: 50%; font-weight: 800; font-size: 1rem; display: flex; align-items: center; justify-content: center;">
+M
 </div>
-<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 18px;">
-<div style="font-size: 0.8rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Pain Score (VAS)</div>
-<div style="font-size: 1.35rem; font-weight: 800; color: #F8FAFC !important; margin-top: 6px;">{pain_val}</div>
-</div>
-<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 18px;">
-<div style="font-size: 0.8rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Muscle Strength</div>
-<div style="font-size: 1.35rem; font-weight: 800; color: #F8FAFC !important; margin-top: 6px;">{str_val}</div>
-</div>
-<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 18px;">
-<div style="font-size: 0.8rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Functional Score</div>
-<div style="font-size: 1.35rem; font-weight: 800; color: #F8FAFC !important; margin-top: 6px;">{fn_val}</div>
+<div style="overflow: hidden;">
+<h4 style="color: #FFFFFF !important; font-size: 0.85rem; font-weight: 700; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{patient.get('full_name', 'Muhammad Hassan')}</h4>
+<span style="color: #00CDBE !important; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">PATIENT</span>
+<p style="color: #64748B !important; font-size: 0.72rem; margin: 0;">{patient.get('patient_id', 'TS-P-811')}</p>
 </div>
 </div>""", unsafe_allow_html=True)
 
-# TAB 3: CARE PLAN
-with tabs[3]:
-    st.markdown("### Active Clinical Care Plan & Prescribed Exercises")
-    if plan and plan.get('activities'):
-        for idx, act in enumerate(plan['activities'], start=1):
-            st.markdown(f"""<div style="background-color: #1E293B; border: 1px solid #334155; border-left: 4px solid #0EA5E9; border-radius: 10px; padding: 16px; margin-bottom: 12px;">
-<strong style="font-size: 1rem; color: #38BDF8 !important;">{idx}. {act['task']}</strong><br>
-<span style="font-size: 0.88rem; color: #E2E8F0 !important;">Prescribed Dosage: {act['reps']} | Frequency: {act['frequency']}</span>
+    # Sidebar Navigation Selection
+    st.markdown("<p style='font-size: 0.7rem; font-weight: 800; color: #475569 !important; text-transform: uppercase; letter-spacing: 0.8px; margin-left: 8px;'>MAIN NAVIGATION</p>", unsafe_allow_html=True)
+    
+    nav_option = st.radio(
+        label="Navigation",
+        options=[" My Dashboard", " Video Call", " My Progress", " My Reports"],
+        index=0,
+        label_visibility="collapsed"
+    )
+
+    st.markdown("<div style='height: 120px;'></div>", unsafe_allow_html=True)
+    
+    st.markdown("""<div style="padding: 12px 16px; color: #EF4444 !important; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+Sign Out
 </div>""", unsafe_allow_html=True)
 
-# TAB 4: TELECONSULTATION
-with tabs[4]:
-    st.markdown("### Teleconsultation Portal")
-    if tele:
-        st.markdown(f"""<div style="background-color: #1E293B; border: 1px solid #0EA5E9; border-radius: 12px; padding: 20px;">
-<h3 style="color: #38BDF8 !important; margin: 0 0 10px 0;">Scheduled Teleconsultation</h3>
-<p style="color: #E2E8F0 !important;"><strong>Provider:</strong> {tele['provider']}</p>
-<p style="color: #E2E8F0 !important;"><strong>Date & Time:</strong> {tele['scheduled_date']} at {tele['scheduled_time']} ({tele['timezone']})</p>
-<p style="color: #E2E8F0 !important;"><strong>Meeting ID:</strong> {tele['meeting_id']}</p>
-<p style="color: #94A3B8 !important;"><strong>Clinical Notes:</strong> {tele['notes']}</p>
-<div style="margin-top: 16px;">
-<a href="{tele['meeting_url']}" target="_blank" style="background-color: #0EA5E9; color: white !important; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; display: inline-block;">
-Join Video Consultation 📹
+# ==============================================================================
+# 4. TOP NAVBAR (Search, Notifications, Patient Avatar Header)
+# ==============================================================================
+st.markdown(f"""<div style="display: flex; justify-content: space-between; align-items: center; background-color: #FFFFFF; padding: 14px 28px; border-radius: 16px; border: 1px solid #E2E8F0; margin-bottom: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.01);">
+<div style="display: flex; align-items: center; gap: 12px;">
+<h2 style="font-size: 1.25rem; font-weight: 800; color: #0F172A !important; margin: 0;">Clinical Dashboard</h2>
+<span style="display: inline-flex; align-items: center; gap: 6px; background-color: #ECFDF5; color: #059669 !important; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;">
+<span style="width: 7px; height: 7px; background-color: #10B981; border-radius: 50%;"></span>
+Secure session active 🛡️
+</span>
+</div>
+<div style="display: flex; align-items: center; gap: 20px;">
+<div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 8px 16px; border-radius: 10px; display: flex; align-items: center; gap: 10px; width: 260px;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+<span style="color: #94A3B8; font-size: 0.85rem;">Search patients, session...</span>
+</div>
+<div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+<span style="position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; background-color: #10B981; border-radius: 50%;"></span>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; padding-left: 10px; border-left: 1px solid #E2E8F0;">
+<div style="text-align: right;">
+<div style="font-size: 0.85rem; font-weight: 800; color: #0F172A !important;">{patient.get('full_name', 'Muhammad Hassan Raza Attari')}</div>
+<div style="font-size: 0.7rem; font-weight: 800; color: #00CDBE !important; text-transform: uppercase;">PATIENT</div>
+</div>
+<div style="background-color: #0284C7; color: #FFFFFF; width: 36px; height: 36px; border-radius: 10px; font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; justify-content: center;">
+M
+</div>
+</div>
+</div>
+</div>""", unsafe_allow_html=True)
+
+# ==============================================================================
+# 5. DASHBOARD MAIN VIEW
+# ==============================================================================
+if "My Dashboard" in nav_option:
+    
+    # HERO BANNER
+    st.markdown(f"""<div style="background: linear-gradient(135deg, #1D68D8 0%, #1E40AF 100%); border-radius: 20px; padding: 28px 32px; color: #FFFFFF; margin-bottom: 24px; position: relative; box-shadow: 0 10px 25px rgba(29, 104, 216, 0.25);">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<div>
+<div style="color: #93C5FD !important; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">Tuesday, September 8, 2026</div>
+<h1 style="color: #FFFFFF !important; font-size: 1.85rem; font-weight: 800; margin: 0 0 8px 0; letter-spacing: -0.5px;">Assalam O Alaikum, Muhammad</h1>
+<p style="color: #DBEAFE !important; font-size: 0.95rem; margin: 0; font-weight: 500;">2 rehab tasks pending — keep up your recovery streak!</p>
+</div>
+<div>
+<a href="{tele_session.get('meeting_url', '#')}" target="_blank" style="background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.3); color: #FFFFFF !important; padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+Join Call
 </a>
 </div>
+</div>
 </div>""", unsafe_allow_html=True)
 
-# TAB 5: DOCTOR CONSOLE (IF AUTHORIZED)
-if portal_role == "Rehabilitator / Doctor":
-    with tabs[5]:
-        st.markdown("### Doctor Console — Record Management")
-        with st.form("doctor_entry"):
-            rom_i = st.text_input("Range of Motion", value=assessment['rom_degrees'] if assessment else "")
-            pain_i = st.text_input("Pain Score", value=assessment['pain_score'] if assessment else "")
-            str_i = st.text_input("Muscle Strength", value=assessment['strength_grade'] if assessment else "")
-            fn_i = st.text_input("Functional Score", value=assessment['functional_score'] if assessment else "")
-            
-            if st.form_submit_button("Update Assessment Data"):
-                conn = get_db_connection()
-                cur = conn.cursor()
-                cur.execute("""
-                INSERT INTO clinical_assessments (patient_id, rom_degrees, pain_score, strength_grade, functional_score, assessment_date)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """, (logged_patient_id, rom_i, pain_i, str_i, fn_i, datetime.now().strftime("%Y-%m-%d")))
-                conn.commit()
-                st.success("Record updated successfully!")
-                st.rerun()
+    # 4 KPI MEASUREMENT CARDS ROW
+    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+
+    with kpi1:
+        st.markdown(f"""<div class="ts-card" style="position: relative;">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+<div style="background-color: #E6F7F5; width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00CDBE" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+</div>
+<span style="color: #CBD5E1; font-size: 1rem;">↗</span>
+</div>
+<div style="width: 24px; height: 3px; background-color: #0F172A; border-radius: 2px; margin-bottom: 12px;"></div>
+<div style="font-size: 0.95rem; font-weight: 700; color: #334155 !important;">Knee Flexion</div>
+<div style="font-size: 0.8rem; font-weight: 600; color: #00CDBE !important; margin-top: 2px;">{assessment.get('knee_flexion', 'No data yet')}</div>
+</div>""", unsafe_allow_html=True)
+
+    with kpi2:
+        st.markdown(f"""<div class="ts-card" style="position: relative;">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+<div style="background-color: #E0F2FE; width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+</div>
+<span style="color: #CBD5E1; font-size: 1rem;">↗</span>
+</div>
+<div style="width: 24px; height: 3px; background-color: #0F172A; border-radius: 2px; margin-bottom: 12px;"></div>
+<div style="font-size: 0.95rem; font-weight: 700; color: #334155 !important;">Shoulder Abduction</div>
+<div style="font-size: 0.8rem; font-weight: 600; color: #0284C7 !important; margin-top: 2px;">{assessment.get('shoulder_abduction', 'No data yet')}</div>
+</div>""", unsafe_allow_html=True)
+
+    with kpi3:
+        st.markdown(f"""<div class="ts-card" style="position: relative;">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+<div style="background-color: #E6F7F5; width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00CDBE" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+</div>
+<span style="color: #CBD5E1; font-size: 1rem;">↗</span>
+</div>
+<div style="width: 24px; height: 3px; background-color: #0F172A; border-radius: 2px; margin-bottom: 12px;"></div>
+<div style="font-size: 0.95rem; font-weight: 700; color: #334155 !important;">Gait Symmetry</div>
+<div style="font-size: 0.8rem; font-weight: 600; color: #00CDBE !important; margin-top: 2px;">{assessment.get('gait_symmetry', 'No data yet')}</div>
+</div>""", unsafe_allow_html=True)
+
+    with kpi4:
+        st.markdown(f"""<div class="ts-card" style="position: relative;">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+<div style="background-color: #FEF3C7; width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+</div>
+<span style="color: #CBD5E1; font-size: 1rem;">↗</span>
+</div>
+<div style="font-size: 1.6rem; font-weight: 800; color: #0F172A !important; line-height: 1;">{assessment.get('sessions_count', 0)}</div>
+<div style="font-size: 0.95rem; font-weight: 700; color: #334155 !important; margin-top: 4px;">Sessions</div>
+<div style="font-size: 0.78rem; font-weight: 600; color: #D97706 !important;">Total recorded</div>
+</div>""", unsafe_allow_html=True)
+
+    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+
+    # MAIN CONTENT GRID: RECENT SESSIONS + QUICK ACTIONS
+    col_left, col_right = st.columns([2.2, 1])
+
+    with col_left:
+        st.markdown("""<div class="ts-card" style="height: 380px; display: flex; flex-direction: column; justify-content: space-between;">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<h3 style="font-size: 1.1rem; font-weight: 800; color: #0F172A !important; margin: 0;">Recent Sessions</h3>
+<span style="font-size: 0.85rem; font-weight: 700; color: #00CDBE !important; cursor: pointer;">View all</span>
+</div>
+<div style="text-align: center; margin: auto;">
+<div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+</div>
+<h4 style="font-size: 0.95rem; font-weight: 700; color: #94A3B8 !important; margin: 0 0 4px 0;">No sessions recorded yet.</h4>
+<p style="font-size: 0.82rem; color: #CBD5E1 !important; margin: 0;">Your doctor will schedule your first session.</p>
+</div>
+<div></div>
+</div>""", unsafe_allow_html=True)
+
+    with col_right:
+        # Action Card 1: Start Video Call (Teal Gradient)
+        st.markdown(f"""<a href="{tele_session.get('meeting_url', '#')}" target="_blank" style="text-decoration: none;">
+<div style="background: linear-gradient(135deg, #00CDBE 0%, #059669 100%); border-radius: 16px; padding: 18px 20px; color: #FFFFFF; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,205,190,0.25);">
+<div style="display: flex; align-items: center; gap: 14px;">
+<div style="background-color: rgba(255,255,255,0.2); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+</div>
+<span style="font-size: 1rem; font-weight: 800; color: #FFFFFF !important;">Start Video Call</span>
+</div>
+<span style="font-size: 1.1rem; color: #FFFFFF;">↗</span>
+</div>
+</a>""", unsafe_allow_html=True)
+
+        # Action Card 2: View My Progress (Vivid Blue)
+        st.markdown("""<div style="background: linear-gradient(135deg, #1D68D8 0%, #1E40AF 100%); border-radius: 16px; padding: 18px 20px; color: #FFFFFF; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(29,104,216,0.25); cursor: pointer;">
+<div style="display: flex; align-items: center; gap: 14px;">
+<div style="background-color: rgba(255,255,255,0.2); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+</div>
+<span style="font-size: 1rem; font-weight: 800; color: #FFFFFF !important;">View My Progress</span>
+</div>
+<span style="font-size: 1.1rem; color: #FFFFFF;">↗</span>
+</div>""", unsafe_allow_html=True)
+
+        # Action Card 3: Secure Chat (Orange / Red Gradient)
+        st.markdown("""<div style="background: linear-gradient(135deg, #F97316 0%, #EF4444 100%); border-radius: 16px; padding: 18px 20px; color: #FFFFFF; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(249,115,22,0.25); cursor: pointer;">
+<div style="display: flex; align-items: center; gap: 14px;">
+<div style="background-color: rgba(255,255,255,0.2); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</div>
+<span style="font-size: 1rem; font-weight: 800; color: #FFFFFF !important;">Secure Chat</span>
+</div>
+<span style="font-size: 1.1rem; color: #FFFFFF;">↗</span>
+</div>""", unsafe_allow_html=True)
+
+        # Action Card 4: Generate Report (Purple Gradient)
+        st.markdown("""<div style="background: linear-gradient(135deg, #8B5CF6 0%, #4F46E5 100%); border-radius: 16px; padding: 18px 20px; color: #FFFFFF; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(139,92,246,0.25); cursor: pointer;">
+<div style="display: flex; align-items: center; gap: 14px;">
+<div style="background-color: rgba(255,255,255,0.2); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+</div>
+<span style="font-size: 1rem; font-weight: 800; color: #FFFFFF !important;">Generate Report</span>
+</div>
+<span style="font-size: 1.1rem; color: #FFFFFF;">↗</span>
+</div>""", unsafe_allow_html=True)
+
+    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+
+    # BOTTOM RECOVERY TIP OF THE DAY BANNER
+    st.markdown("""<div style="background-color: #E6F7F5; border: 1px solid #B2EBF2; border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; gap: 16px;">
+<div style="background-color: #00CDBE; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+</div>
+<div>
+<h4 style="font-size: 0.95rem; font-weight: 800; color: #07152B !important; margin: 0 0 4px 0;">Recovery Tip of the Day</h4>
+<p style="font-size: 0.88rem; color: #334155 !important; margin: 0; font-weight: 500;">
+For ACL rehabilitation, consistent active range-of-motion exercises performed 3x daily significantly reduces joint stiffness and accelerates quadriceps activation.
+</p>
+</div>
+</div>""", unsafe_allow_html=True)
+
+# ==============================================================================
+# 6. OTHER SUB-PAGES (VIDEO CALL, MY PROGRESS, MY REPORTS)
+# ==============================================================================
+elif "Video Call" in nav_option:
+    st.markdown("### 📹 TeleSynapse HD Video Consultation")
+    st.markdown(f"**Host Doctor:** {tele_session.get('host_rehabilitator', 'Dr. Shahzaib Mughal')}")
+    st.components.v1.iframe(tele_session.get('meeting_url', 'https://meet.jit.si/'), height=600, scrolling=True)
+
+elif "My Progress" in nav_option:
+    st.markdown("### 📊 Recovery Progress & Range of Motion Tracking")
+    df_chart = pd.DataFrame({
+        "Week": ["Week 1", "Week 2", "Week 3", "Week 4"],
+        "Flexion (Degrees)": [45, 65, 80, 95]
+    })
+    st.line_chart(df_chart.set_index("Week"))
+    st.json(assessment)
+
+elif "My Reports" in nav_option:
+    st.markdown("### 📋 Downloadable Medical & Clinical Reports")
+    st.markdown(f"""<div class="ts-card">
+<h4>Patient Clinical File - {patient.get('patient_id')}</h4>
+<p><strong>Diagnosis:</strong> {patient.get('diagnosis')}</p>
+<p><strong>Attending Physician:</strong> {patient.get('assigned_rehabilitator')}</p>
+<p><strong>Clinical Summary:</strong> {patient.get('clinical_notes')}</p>
+</div>""", unsafe_allow_html=True)
