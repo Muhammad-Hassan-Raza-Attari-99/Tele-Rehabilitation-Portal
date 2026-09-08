@@ -1468,11 +1468,11 @@ elif st.session_state.role == "Doctor" and st.session_state.page == "Teleconsult
         st.markdown(
             """
             <div class="ts-card" style="text-align:center;">
-            <div style="font-size:70px;">🎥</div>
-            <h2>Waiting Room</h2>
-            <p class="small-muted">
-            Patient connection is ready.
-            </p>
+                <div style="font-size:70px;">🎥</div>
+                <h2>Waiting Room</h2>
+                <p class="small-muted">
+                    Patient connection is ready.
+                </p>
             </div>
             """,
             unsafe_allow_html=True
@@ -1482,7 +1482,6 @@ elif st.session_state.role == "Doctor" and st.session_state.page == "Teleconsult
             "📞 Start Consultation",
             type="primary"
         ):
-
             st.session_state.active_call = True
             st.rerun()
 
@@ -1491,4 +1490,36 @@ elif st.session_state.role == "Doctor" and st.session_state.page == "Teleconsult
         st.markdown(
             """
             <div class="ts-card" style="text-align:center;">
-            <div style="font-size:75
+                <div style="font-size:75px;">🎥</div>
+                <h2>Consultation in Progress</h2>
+                <p class="small-muted">
+                    You are now connected with the selected patient.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            f"""
+            <div class="ts-card">
+                <h3>👤 Patient</h3>
+                <p>{upcoming}</p>
+                <p class="small-muted">
+                    Teleconsultation is active.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if st.button("🔴 End Consultation", type="primary"):
+                st.session_state.active_call = False
+                st.rerun()
+
+        with col2:
+            if st.button("🔄 Refresh"):
+                st.rerun()
