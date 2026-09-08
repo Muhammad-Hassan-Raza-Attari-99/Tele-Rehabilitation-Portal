@@ -4,10 +4,10 @@ import json
 from datetime import datetime, date
 
 # ==============================================================================
-# 1. SYSTEM PAGE CONFIGURATION & ENTERPRISE STYLESHEET
+# 1. PAGE CONFIGURATION & SKY BLUE / DARK SLATE THEMING
 # ==============================================================================
 st.set_page_config(
-    page_title="Tekerehab Portal | Enterprise Rehabilitation System",
+    page_title="Tekerehab | Sky Clinical Portal",
     page_icon="🩺",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -15,9 +15,9 @@ st.set_page_config(
 
 DB_FILE = "tekerehab_clinical.db"
 
-def inject_enterprise_styles():
+def inject_sky_theme():
     st.markdown("""<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 #MainMenu, header, footer, [data-testid="stHeader"] { 
     visibility: hidden !important; 
@@ -29,196 +29,88 @@ def inject_enterprise_styles():
 }
 
 html, body, [class*="css"], .stMarkdown {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-    color: #0F172A !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    color: #F1F5F9 !important;
 }
 
+/* App Background: Dark Slate / Deep Blue to replace stark white */
 .stApp {
-    background-color: #F8FAFC !important;
+    background: linear-gradient(135deg, #0B132B 0%, #0F172A 100%) !important;
 }
 
+/* Sidebar Styling */
 [data-testid="stSidebar"] {
-    background-color: #0F172A !important;
+    background-color: #091026 !important;
     border-right: 1px solid #1E293B !important;
 }
 
 [data-testid="stSidebar"] * {
-    color: #F8FAFC !important;
+    color: #E2E8F0 !important;
 }
 
 [data-testid="stSidebar"] label {
-    color: #94A3B8 !important;
+    color: #38BDF8 !important;
     font-weight: 700 !important;
     font-size: 0.8rem !important;
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
 }
 
+/* Form Inputs & Selectboxes */
+div[data-baseweb="select"] > div, .stTextInput input, .stTextArea textarea {
+    background-color: #1E293B !important;
+    color: #F8FAFC !important;
+    border: 1px solid #334155 !important;
+    border-radius: 8px !important;
+}
+
+/* Tab Styling - Sky Blue Highlights */
 .stTabs [data-baseweb="tab-list"] {
     gap: 8px;
-    background-color: #FFFFFF;
+    background-color: #0F172A;
     padding: 8px;
     border-radius: 12px;
-    border: 1px solid #CBD5E1;
+    border: 1px solid #1E293B;
 }
 
 .stTabs [data-baseweb="tab"] {
     height: 44px;
-    white-space: pre;
     border-radius: 8px;
-    color: #475569;
+    color: #94A3B8;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     padding: 0px 16px;
+    border: none !important;
 }
 
 .stTabs [aria-selected="true"] {
-    background-color: #0284C7 !important;
+    background-color: #0EA5E9 !important;
     color: #FFFFFF !important;
     font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3) !important;
+}
+
+/* Buttons */
+.stButton > button {
+    background-color: #0EA5E9 !important;
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 20px !important;
+    transition: all 0.2s ease !important;
+}
+
+.stButton > button:hover {
+    background-color: #38BDF8 !important;
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4) !important;
 }
 </style>""", unsafe_allow_html=True)
 
-inject_enterprise_styles()
+inject_sky_theme()
 
 # ==============================================================================
-# 2. INTERNATIONALIZATION (i18n) DICTIONARY
-# ==============================================================================
-TRANSLATIONS = {
-    "English": {
-        "portal_title": "Tekerehab Portal",
-        "subtitle": "Enterprise Physical Rehabilitation & Teleconsultation System",
-        "profile_completion": "Profile Completion",
-        "patient_info": "Patient Info",
-        "clinical_diagnosis": "Diagnosis",
-        "affected_region": "Affected Region",
-        "medical_records": "Medical Records",
-        "rehab_assessment": "Rehab Assessment",
-        "teleconsultation": "Teleconsultation",
-        "complete": "Complete",
-        "incomplete": "Incomplete",
-        "scheduled": "Scheduled",
-        "not_scheduled": "Not Scheduled",
-        "not_assessed": "Not Assessed",
-        "join_meeting": "Launch Video Portal",
-        "assigned_by": "Assigned by",
-        "effective_from": "Effective from",
-        "phase": "Current Phase",
-        "rehab_pathway": "Rehabilitation Pathway",
-        "tab_profile": "📋 Clinical Profile",
-        "tab_assessment": "📊 Rehab Assessment",
-        "tab_plan": "💪 Care Plan",
-        "tab_teleconsult": "📹 Teleconsultation",
-        "tab_editor": "⚙️ Doctor Console"
-    },
-    "Urdu": {
-        "portal_title": "ٹیکی ری ہیب پورٹل",
-        "subtitle": "پیشہ ورانہ کلینکل بحالی اور ٹیلی مشاورت کا نظام",
-        "profile_completion": "پروفائل کی تکمیل",
-        "patient_info": "مریض کی معلومات",
-        "clinical_diagnosis": "کلینکل تشخیص",
-        "affected_region": "متاثرہ حصہ",
-        "medical_records": "طبی ریکارڈ",
-        "rehab_assessment": "بحالی کا جائزہ",
-        "teleconsultation": "ٹیلی مشاورت",
-        "complete": "مکمل",
-        "incomplete": "غیر مکمل",
-        "scheduled": "شیڈول شدہ",
-        "not_scheduled": "شیڈول نہیں",
-        "not_assessed": "جائزہ باقی",
-        "join_meeting": "ویڈیو پورٹل کھولیں",
-        "assigned_by": "تعینات کردہ",
-        "effective_from": "سے نافذ العمل",
-        "phase": "موجودہ مرحلہ",
-        "rehab_pathway": "بحالی کا راستہ",
-        "tab_profile": "📋 کلینکل پروفائل",
-        "tab_assessment": "📊 بحالی کا جائزہ",
-        "tab_plan": "💪 کیئر پلان",
-        "tab_teleconsult": "📹 ٹیلی پورٹل",
-        "tab_editor": "⚙️ معالج کنسول"
-    },
-    "Arabic": {
-        "portal_title": "بوابة تيكي ريهاب",
-        "subtitle": "نظام إدارة إعادة التأهيل الطبي واستشارات العلاج الطبيعي",
-        "profile_completion": "إكمال الملف",
-        "patient_info": "معلومات المريض",
-        "clinical_diagnosis": "التشخيص السريري",
-        "affected_region": "المنطقة المصابة",
-        "medical_records": "السجلات الطبية",
-        "rehab_assessment": "تقييم التأهيل",
-        "teleconsultation": "الاستشارة عن بُعد",
-        "complete": "مكتمل",
-        "incomplete": "غیر مكتمل",
-        "scheduled": "مجدول",
-        "not_scheduled": "غير مجدول",
-        "not_assessed": "لم يتم التقييم",
-        "join_meeting": "الانضمام للمكالمة",
-        "assigned_by": "المعالج المسؤول",
-        "effective_from": "ساري من",
-        "phase": "المرحلة الحالية",
-        "rehab_pathway": "مسار التأهيل",
-        "tab_profile": "📋 الملف السريري",
-        "tab_assessment": "📊 تقييم التأهيل",
-        "tab_plan": "💪 خطة الرعاية",
-        "tab_teleconsult": "📹 بوابة الاستشارة",
-        "tab_editor": "⚙️ لوحة المعالج"
-    },
-    "Spanish": {
-        "portal_title": "Portal Tekerehab",
-        "subtitle": "Gestión Clínica de Tele-Rehabilitación y Fisioterapia",
-        "profile_completion": "Completitud del Perfil",
-        "patient_info": "Información",
-        "clinical_diagnosis": "Diagnóstico",
-        "affected_region": "Región Afectada",
-        "medical_records": "Registros Médicos",
-        "rehab_assessment": "Evaluación Rehab",
-        "teleconsultation": "Teleconsulta",
-        "complete": "Completo",
-        "incomplete": "Incompleto",
-        "scheduled": "Programado",
-        "not_scheduled": "No Programado",
-        "not_assessed": "Aún no evaluado",
-        "join_meeting": "Unirse a la Sesión",
-        "assigned_by": "Asignado por",
-        "effective_from": "Efectivo desde",
-        "phase": "Fase Actual",
-        "rehab_pathway": "Vía de Rehabilitación",
-        "tab_profile": "📋 Perfil Clínico",
-        "tab_assessment": "📊 Evaluación",
-        "tab_plan": "💪 Plan de Cuidado",
-        "tab_teleconsult": "📹 Teleconsulta",
-        "tab_editor": "⚙️ Consola Doctor"
-    },
-    "French": {
-        "portal_title": "Portail Tekerehab",
-        "subtitle": "Système Clinique de Télé-Réadaptation et Physiothérapie",
-        "profile_completion": "Complétion du Profil",
-        "patient_info": "Informations",
-        "clinical_diagnosis": "Diagnostic",
-        "affected_region": "Région Touchée",
-        "medical_records": "Dossiers Médicaux",
-        "rehab_assessment": "Évaluation",
-        "teleconsultation": "Téléconsultation",
-        "complete": "Complet",
-        "incomplete": "Incomplet",
-        "scheduled": "Programmé",
-        "not_scheduled": "Non Programmé",
-        "not_assessed": "Pas encore évalué",
-        "join_meeting": "Rejoindre la Session",
-        "assigned_by": "Assigné par",
-        "effective_from": "Effectif depuis",
-        "phase": "Phase Actuelle",
-        "rehab_pathway": "Parcours Réadaptation",
-        "tab_profile": "📋 Profil Clinique",
-        "tab_assessment": "📊 Évaluation",
-        "tab_plan": "💪 Plan de Soins",
-        "tab_teleconsult": "📹 Téléconsultation",
-        "tab_editor": "⚙️ Console Médecin"
-    }
-}
-
-# ==============================================================================
-# 3. DATABASE SCHEMA & PERSISTENCE LAYER
+# 2. DATABASE PERSISTENCE & INITIALIZATION
 # ==============================================================================
 @st.cache_resource
 def get_db_connection():
@@ -330,114 +222,173 @@ def fetch_teleconsultation(patient_id):
     return dict(zip([col[0] for col in cur.description], row)) if row else None
 
 # ==============================================================================
-# 4. SIDEBAR & CONTEXT CONTROLS
+# 3. AUTHENTICATION / LOGIN PORTAL SESSION STATE
 # ==============================================================================
-with st.sidebar:
-    st.markdown("""<div style="padding: 10px 0 15px 0; border-bottom: 1px solid #1E293B; margin-bottom: 15px;">
-<h2 style="color:#FFFFFF !important; font-size:1.4rem; font-weight:800; margin:0;">Tekerehab Portal</h2>
-<p style="color:#38BDF8 !important; font-size:0.75rem; font-weight:700; margin:4px 0 0 0; letter-spacing: 0.5px;">CLINICAL REHABILITATION</p>
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+if "user_role" not in st.session_state:
+    st.session_state["user_role"] = "Patient"
+if "patient_id" not in st.session_state:
+    st.session_state["patient_id"] = "TRP-1001"
+
+# LOGIN SCREEN
+if not st.session_state["authenticated"]:
+    st.markdown("""<div style="max-width: 480px; margin: 60px auto 20px auto; text-align: center;">
+<div style="background-color: #0EA5E9; display: inline-block; padding: 12px 18px; border-radius: 16px; margin-bottom: 12px; box-shadow: 0 0 20px rgba(14, 165, 233, 0.4);">
+<span style="font-size: 2rem;">🩺</span>
+</div>
+<h1 style="color: #38BDF8 !important; font-size: 2rem; font-weight: 800; margin: 0;">Tekerehab Portal</h1>
+<p style="color: #94A3B8 !important; font-size: 0.95rem; margin-top: 6px;">Enterprise Physical Rehabilitation Platform</p>
 </div>""", unsafe_allow_html=True)
 
-    selected_language = st.selectbox("Preferred Language", ["English", "Urdu", "Arabic", "Spanish", "French"], index=0)
-    t = TRANSLATIONS[selected_language]
+    st.markdown("""<div style="max-width: 480px; margin: 0 auto; background-color: #1E293B; border: 1px solid #0EA5E9; border-radius: 16px; padding: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+<h3 style="color: #F8FAFC !important; margin: 0 0 20px 0; text-align: center; font-size: 1.2rem; font-weight: 700;">Sign In to Your Account</h3>
+</div>""", unsafe_allow_html=True)
 
-    st.markdown("<hr style='border-color: #1E293B; margin: 12px 0;'>", unsafe_allow_html=True)
-    country_setting = st.selectbox("Country / Locale", ["Pakistan", "United States", "Saudi Arabia", "United Kingdom", "Spain"])
-    timezone_setting = st.selectbox("Time Zone", ["PKT (UTC+5)", "EST (UTC-5)", "AST (UTC+3)", "GMT (UTC+0)", "CET (UTC+1)"])
+    with st.form("login_form"):
+        role = st.selectbox("Select Access Role", ["Patient", "Rehabilitator / Doctor"])
+        user_input = st.text_input("User ID / Patient Record ID", value="TRP-1001")
+        password = st.text_input("Password", type="password", value="••••••••")
+        
+        submit_login = st.form_submit_button("Launch Portal Dashboard 🚀", use_container_width=True)
+        
+        if submit_login:
+            st.session_state["authenticated"] = True
+            st.session_state["user_role"] = role
+            st.session_state["patient_id"] = user_input
+            st.rerun()
+            
+    st.markdown("""<div style="text-align: center; margin-top: 20px; color: #64748B; font-size: 0.8rem;">
+Protected System • HIPAA & Clinical Data Compliant
+</div>""", unsafe_allow_html=True)
+    st.stop()
 
-    st.markdown("<hr style='border-color: #1E293B; margin: 12px 0;'>", unsafe_allow_html=True)
-    portal_role = st.selectbox("Portal Access Role", ["Patient", "Rehabilitator / Doctor"])
-
-    if portal_role == "Patient":
-        logged_patient_id = "TRP-1001"
-        st.success(f"Active Account: **{logged_patient_id}**")
-    else:
-        logged_patient_id = st.selectbox("Select Patient Record", ["TRP-1001"])
+# ==============================================================================
+# 4. DASHBOARD VIEW & SIDEBAR
+# ==============================================================================
+logged_patient_id = st.session_state["patient_id"]
+portal_role = st.session_state["user_role"]
 
 p = fetch_patient_record(logged_patient_id)
 assessment = fetch_latest_assessment(logged_patient_id)
 plan = fetch_rehab_plan(logged_patient_id)
 tele = fetch_teleconsultation(logged_patient_id)
 
-def calculate_profile_completion(p, assessment, tele):
-    if not p:
-        return 0, {}
-    sections = {
-        "patient_info": bool(p.get('full_name') and p.get('date_of_birth') and p.get('phone')),
-        "clinical_diagnosis": bool(p.get('diagnosis') and p.get('diagnosis_date')),
-        "affected_region": bool(p.get('affected_organ') and p.get('laterality')),
-        "medical_records": bool(p.get('medical_reports_uploaded') or p.get('surgery_history')),
-        "rehab_assessment": bool(assessment and assessment.get('rom_degrees') is not None),
-        "teleconsultation": bool(tele and tele.get('meeting_url'))
-    }
-    percentage = int((sum(sections.values()) / len(sections)) * 100)
-    return percentage, sections
+with st.sidebar:
+    st.markdown("""<div style="padding: 10px 0 15px 0; border-bottom: 1px solid #1E293B; margin-bottom: 15px;">
+<h2 style="color:#38BDF8 !important; font-size:1.3rem; font-weight:800; margin:0;">Tekerehab Portal</h2>
+<p style="color:#0EA5E9 !important; font-size:0.75rem; font-weight:700; margin:4px 0 0 0; letter-spacing: 0.5px;">SKY CLINICAL DASHBOARD</p>
+</div>""", unsafe_allow_html=True)
 
-completion_pct, completion_status = calculate_profile_completion(p, assessment, tele)
+    st.markdown(f"**Logged User:** {st.session_state['user_role']}")
+    st.markdown(f"**Active ID:** `{logged_patient_id}`")
 
-# ==============================================================================
-# 5. HEADER & CLEAN CLINICAL PROFILE OVERVIEW (Zero Code Blocks, No Dash Bar)
-# ==============================================================================
-st.markdown(f"""<div style="background-color: #FFFFFF; padding: 20px 24px; border-radius: 12px; border: 1px solid #CBD5E1; margin-bottom: 20px;">
+    if st.button("🔒 Sign Out / Switch User", use_container_width=True):
+        st.session_state["authenticated"] = False
+        st.rerun()
+
+    st.markdown("<hr style='border-color: #1E293B; margin: 16px 0;'>", unsafe_allow_html=True)
+    selected_language = st.selectbox("Preferred Language", ["English", "Urdu", "Arabic", "Spanish", "French"])
+    timezone_setting = st.selectbox("Time Zone", ["PKT (UTC+5)", "EST (UTC-5)", "AST (UTC+3)", "GMT (UTC+0)", "CET (UTC+1)"])
+
+# Calculate Profile Completion %
+def get_completion_pct(p, assessment, tele):
+    if not p: return 0
+    checks = [
+        bool(p.get('full_name')), bool(p.get('diagnosis')),
+        bool(p.get('affected_organ')), bool(p.get('medical_reports_uploaded')),
+        bool(assessment and assessment.get('rom_degrees')), bool(tele and tele.get('meeting_url'))
+    ]
+    return int((sum(checks) / len(checks)) * 100)
+
+completion_pct = get_completion_pct(p, assessment, tele)
+
+# APP HEADER DASHBOARD BANNER
+st.markdown(f"""<div style="background-color: #1E293B; border: 1px solid #0EA5E9; border-radius: 14px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(14, 165, 233, 0.15);">
 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
 <div>
-<h1 style="font-size: 1.6rem; font-weight: 800; color: #0F172A !important; margin: 0;">{t['portal_title']}</h1>
-<p style="color: #475569 !important; font-size: 0.88rem; margin: 4px 0 0 0; font-weight: 500;">{t['subtitle']}</p>
+<span style="background-color: #0EA5E9; color: #FFFFFF; font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 6px; text-transform: uppercase;">Clinical Dashboard</span>
+<h1 style="font-size: 1.6rem; font-weight: 800; color: #F8FAFC !important; margin: 6px 0 0 0;">Welcome, {p['full_name'] if p else 'Patient'}</h1>
+<p style="color: #38BDF8 !important; font-size: 0.88rem; margin: 4px 0 0 0; font-weight: 600;">Record ID: {logged_patient_id} • Assigned Rehabilitator: {p['assigned_rehabilitator'] if p else 'N/A'}</p>
 </div>
-<div style="text-align: right;">
-<span style="font-size: 0.75rem; font-weight: 700; color: #64748B !important; letter-spacing: 0.5px; text-transform: uppercase;">PATIENT RECORD</span><br>
-<span style="font-size: 1.1rem; font-weight: 800; color: #0284C7 !important; background-color: #F0F9FF; padding: 3px 12px; border-radius: 6px; border: 1px solid #BAE6FD;">{logged_patient_id}</span>
-</div>
-</div>
-</div>""", unsafe_allow_html=True)
-
-# Main Clinical Profile Overview Panel Card
-st.markdown(f"""<div style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 12px; padding: 20px; border-left: 6px solid #0284C7; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-<h3 style="margin:0; font-size: 1.15rem; font-weight: 800; color: #0F172A !important;">Clinical Profile Overview</h3>
-<span style="font-size: 1.05rem; font-weight: 800; color: #0284C7 !important; background-color: #F0F9FF; padding: 6px 14px; border-radius: 8px; border: 1px solid #BAE6FD;">
-{t['profile_completion']}: {completion_pct}%
-</span>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
-<div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
-<div style="font-size: 0.75rem; font-weight: 700; color: #475569 !important; text-transform: uppercase; margin-bottom: 6px;">{t['patient_info']}</div>
-<span style="background-color: {'#D1FAE5' if completion_status.get('patient_info') else '#FEF3C7'}; color: {'#065F46' if completion_status.get('patient_info') else '#92400E'} !important; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: inline-block;">{'Complete' if completion_status.get('patient_info') else 'Incomplete'}</span>
-</div>
-<div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
-<div style="font-size: 0.75rem; font-weight: 700; color: #475569 !important; text-transform: uppercase; margin-bottom: 6px;">{t['clinical_diagnosis']}</div>
-<span style="background-color: {'#D1FAE5' if completion_status.get('clinical_diagnosis') else '#FEF3C7'}; color: {'#065F46' if completion_status.get('clinical_diagnosis') else '#92400E'} !important; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: inline-block;">{'Complete' if completion_status.get('clinical_diagnosis') else 'Incomplete'}</span>
-</div>
-<div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
-<div style="font-size: 0.75rem; font-weight: 700; color: #475569 !important; text-transform: uppercase; margin-bottom: 6px;">{t['affected_region']}</div>
-<span style="background-color: {'#D1FAE5' if completion_status.get('affected_region') else '#FEF3C7'}; color: {'#065F46' if completion_status.get('affected_region') else '#92400E'} !important; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: inline-block;">{'Complete' if completion_status.get('affected_region') else 'Incomplete'}</span>
-</div>
-<div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
-<div style="font-size: 0.75rem; font-weight: 700; color: #475569 !important; text-transform: uppercase; margin-bottom: 6px;">{t['medical_records']}</div>
-<span style="background-color: {'#D1FAE5' if completion_status.get('medical_records') else '#FEF3C7'}; color: {'#065F46' if completion_status.get('medical_records') else '#92400E'} !important; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: inline-block;">{'Complete' if completion_status.get('medical_records') else 'Incomplete'}</span>
-</div>
-<div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
-<div style="font-size: 0.75rem; font-weight: 700; color: #475569 !important; text-transform: uppercase; margin-bottom: 6px;">{t['rehab_assessment']}</div>
-<span style="background-color: {'#D1FAE5' if completion_status.get('rehab_assessment') else '#F1F5F9'}; color: {'#065F46' if completion_status.get('rehab_assessment') else '#334155'} !important; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: inline-block;">{'Complete' if completion_status.get('rehab_assessment') else 'Not Assessed'}</span>
-</div>
-<div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; text-align: center;">
-<div style="font-size: 0.75rem; font-weight: 700; color: #475569 !important; text-transform: uppercase; margin-bottom: 6px;">{t['teleconsultation']}</div>
-<span style="background-color: {'#E0F2FE' if completion_status.get('teleconsultation') else '#F1F5F9'}; color: {'#075985' if completion_status.get('teleconsultation') else '#334155'} !important; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: inline-block;">{'Scheduled' if completion_status.get('teleconsultation') else 'Not Scheduled'}</span>
+<div style="text-align: right; background-color: #0F172A; padding: 10px 18px; border-radius: 10px; border: 1px solid #334155;">
+<span style="font-size: 0.75rem; font-weight: 700; color: #94A3B8 !important; text-transform: uppercase;">Profile Completion</span><br>
+<span style="font-size: 1.3rem; font-weight: 800; color: #38BDF8 !important;">{completion_pct}% Complete</span>
 </div>
 </div>
 </div>""", unsafe_allow_html=True)
 
+# DASHBOARD KPI METRIC CARDS
+col_kpi1, col_kpi2, col_kpi3, col_kpi4 = st.columns(4)
+
+with col_kpi1:
+    st.markdown(f"""<div style="background-color: #1E293B; border-left: 4px solid #38BDF8; border-radius: 10px; padding: 14px; border: 1px solid #334155;">
+<div style="font-size: 0.75rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Active Diagnosis</div>
+<div style="font-size: 0.95rem; font-weight: 700; color: #F8FAFC !important; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{p['diagnosis'] if p else 'N/A'}</div>
+<div style="font-size: 0.75rem; color: #94A3B8 !important; margin-top: 2px;">Since {p['diagnosis_date'] if p else 'N/A'}</div>
+</div>""", unsafe_allow_html=True)
+
+with col_kpi2:
+    st.markdown(f"""<div style="background-color: #1E293B; border-left: 4px solid #0EA5E9; border-radius: 10px; padding: 14px; border: 1px solid #334155;">
+<div style="font-size: 0.75rem; font-weight: 700; color: #0EA5E9 !important; text-transform: uppercase;">Current Phase</div>
+<div style="font-size: 0.95rem; font-weight: 700; color: #F8FAFC !important; margin-top: 4px;">{plan['phase_name'] if plan else 'Phase 1'}</div>
+<div style="font-size: 0.75rem; color: #94A3B8 !important; margin-top: 2px;">Effective {plan['effective_date'] if plan else 'N/A'}</div>
+</div>""", unsafe_allow_html=True)
+
+with col_kpi3:
+    st.markdown(f"""<div style="background-color: #1E293B; border-left: 4px solid #0284C7; border-radius: 10px; padding: 14px; border: 1px solid #334155;">
+<div style="font-size: 0.75rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Latest ROM Assessment</div>
+<div style="font-size: 0.95rem; font-weight: 700; color: #F8FAFC !important; margin-top: 4px;">{assessment['rom_degrees'] if (assessment and assessment.get('rom_degrees')) else 'Pending'}</div>
+<div style="font-size: 0.75rem; color: #94A3B8 !important; margin-top: 2px;">Pain Score: {assessment['pain_score'] if assessment else 'N/A'}</div>
+</div>""", unsafe_allow_html=True)
+
+with col_kpi4:
+    st.markdown(f"""<div style="background-color: #1E293B; border-left: 4px solid #38BDF8; border-radius: 10px; padding: 14px; border: 1px solid #334155;">
+<div style="font-size: 0.75rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Teleconsultation</div>
+<div style="font-size: 0.95rem; font-weight: 700; color: #F8FAFC !important; margin-top: 4px;">{tele['scheduled_date'] if tele else 'None'}</div>
+<div style="font-size: 0.75rem; color: #94A3B8 !important; margin-top: 2px;">Time: {tele['scheduled_time'] if tele else 'N/A'}</div>
+</div>""", unsafe_allow_html=True)
+
+st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
 # ==============================================================================
-# 6. WORKSPACE TABS
+# 5. DASHBOARD NAVIGATION TABS
 # ==============================================================================
-tab_list = [t['tab_profile'], t['tab_assessment'], t['tab_plan'], t['tab_teleconsult']]
+tab_titles = ["📊 Overview", "📋 Patient Demographics", "📊 Rehab Assessment", "💪 Care Plan", "📹 Teleconsultation"]
 if portal_role == "Rehabilitator / Doctor":
-    tab_list.append(t['tab_editor'])
+    tab_titles.append("⚙️ Doctor Console")
 
-tabs = st.tabs(tab_list)
+tabs = st.tabs(tab_titles)
 
-# TAB 1: CLINICAL PROFILE
+# TAB 0: EXECUTIVE OVERVIEW
 with tabs[0]:
+    st.markdown("### Clinical Overview & Status Summary")
+    ov_c1, ov_c2 = st.columns([2, 1])
+    
+    with ov_c1:
+        st.markdown(f"""<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+<h4 style="color: #38BDF8 !important; margin: 0 0 12px 0;">Patient Summary Card</h4>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem;">
+<div><span style="color: #94A3B8;">Full Name:</span> <strong style="color:#F8FAFC;">{p['full_name']}</strong></div>
+<div><span style="color: #94A3B8;">DOB / Age:</span> <strong style="color:#F8FAFC;">{p['date_of_birth']}</strong></div>
+<div><span style="color: #94A3B8;">Affected Region:</span> <strong style="color:#F8FAFC;">{p['affected_organ']} ({p['laterality']})</strong></div>
+<div><span style="color: #94A3B8;">Injury Type:</span> <strong style="color:#F8FAFC;">{p['injury_type']}</strong></div>
+<div><span style="color: #94A3B8;">Referring Doctor:</span> <strong style="color:#F8FAFC;">{p['referring_physician']}</strong></div>
+<div><span style="color: #94A3B8;">Contact:</span> <strong style="color:#F8FAFC;">{p['phone']}</strong></div>
+</div>
+</div>""", unsafe_allow_html=True)
+
+    with ov_c2:
+        st.markdown(f"""<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 20px; text-align: center;">
+<h4 style="color: #38BDF8 !important; margin: 0 0 8px 0;">Teleconsult Portal</h4>
+<p style="font-size: 0.85rem; color: #94A3B8;">Next scheduled video session with your clinical team.</p>
+<a href="{tele['meeting_url'] if tele else '#'}" target="_blank" style="background-color: #0EA5E9; color: white !important; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 700; display: inline-block; margin-top: 8px;">
+Launch Session 📹
+</a>
+</div>""", unsafe_allow_html=True)
+
+# TAB 1: DEMOGRAPHICS
+with tabs[1]:
     st.markdown("### Patient Demographics & Complete Clinical Record")
     if p:
         col_a, col_b = st.columns(2)
@@ -462,7 +413,7 @@ with tabs[0]:
             st.markdown(f"**Referring Physician:** {p['referring_physician']}")
             st.markdown(f"**Assigned Rehabilitator:** {p['assigned_rehabilitator']}")
 
-        st.markdown("<hr style='border-color: #CBD5E1;'>", unsafe_allow_html=True)
+        st.markdown("<hr style='border-color: #334155;'>", unsafe_allow_html=True)
         st.markdown("#### Medical History & Functional Limitations")
         m1, m2 = st.columns(2)
         with m1:
@@ -476,156 +427,77 @@ with tabs[0]:
             st.markdown(f"**Mobility Limitations:** {p['mobility_limitations']}")
             st.markdown(f"**Clinical Notes:** {p['clinical_notes']}")
 
-        st.markdown("<hr style='border-color: #CBD5E1;'>", unsafe_allow_html=True)
-        st.markdown("#### Uploaded Medical Reports & Consent")
-        st.markdown(f"**Uploaded Documents:** {p['medical_reports_uploaded']}")
-        st.markdown(f"**Document Repository:** [{p['document_links']}]({p['document_links']})")
-        st.markdown(f"**Authorization Consent Status:** {'Granted' if p['consent_authorization'] else 'Pending'}")
-
-# TAB 2: REHABILITATION ASSESSMENT
-with tabs[1]:
-    st.markdown("### Clinical Assessment & Measurement Metrics")
-    st.markdown(f"#### {t['rehab_pathway']}")
-    
-    current_phase_name = plan['phase_name'] if plan else "Initial Assessment"
-    steps = ["Initial Assessment", "Mobility & Strength", "Functional Training", "Return to Activity"]
-    
-    pathway_items = ""
-    for step in steps:
-        if step in current_phase_name:
-            pathway_items += f"<div style='flex:1; text-align:center; padding:10px; font-weight:800; font-size:0.85rem; color:#0284C7 !important; border-bottom:4px solid #0284C7; background:#F0F9FF;'>{step} (Active)</div>"
-        else:
-            pathway_items += f"<div style='flex:1; text-align:center; padding:10px; font-weight:600; font-size:0.85rem; color:#64748B !important; border-bottom:4px solid #E2E8F0;'>{step}</div>"
-            
-    st.markdown(f"""<div style="display: flex; background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 10px; overflow: hidden; margin-bottom: 24px;">
-{pathway_items}
-</div>""", unsafe_allow_html=True)
-
-    st.markdown("#### Active Clinical Measurements")
+# TAB 2: REHAB ASSESSMENT
+with tabs[2]:
+    st.markdown("### Clinical Assessment & Range of Motion Metrics")
     rom_val = assessment['rom_degrees'] if (assessment and assessment.get('rom_degrees')) else "Not assessed yet"
     pain_val = assessment['pain_score'] if (assessment and assessment.get('pain_score')) else "Not assessed yet"
     str_val = assessment['strength_grade'] if (assessment and assessment.get('strength_grade')) else "Not assessed yet"
     fn_val = assessment['functional_score'] if (assessment and assessment.get('functional_score')) else "Not assessed yet"
 
-    st.markdown(f"""<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
-<div style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 12px; padding: 18px;">
-<div style="font-size: 0.8rem; font-weight: 700; color: #475569 !important; text-transform: uppercase;">Range of Motion (ROM)</div>
-<div style="font-size: 1.35rem; font-weight: 800; color: #0F172A !important; margin-top: 6px;">{rom_val}</div>
+    st.markdown(f"""<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 18px;">
+<div style="font-size: 0.8rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Range of Motion (ROM)</div>
+<div style="font-size: 1.35rem; font-weight: 800; color: #F8FAFC !important; margin-top: 6px;">{rom_val}</div>
 </div>
-<div style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 12px; padding: 18px;">
-<div style="font-size: 0.8rem; font-weight: 700; color: #475569 !important; text-transform: uppercase;">Pain Score (VAS)</div>
-<div style="font-size: 1.35rem; font-weight: 800; color: #0F172A !important; margin-top: 6px;">{pain_val}</div>
+<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 18px;">
+<div style="font-size: 0.8rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Pain Score (VAS)</div>
+<div style="font-size: 1.35rem; font-weight: 800; color: #F8FAFC !important; margin-top: 6px;">{pain_val}</div>
 </div>
-<div style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 12px; padding: 18px;">
-<div style="font-size: 0.8rem; font-weight: 700; color: #475569 !important; text-transform: uppercase;">Muscle Strength</div>
-<div style="font-size: 1.35rem; font-weight: 800; color: #0F172A !important; margin-top: 6px;">{str_val}</div>
+<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 18px;">
+<div style="font-size: 0.8rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Muscle Strength</div>
+<div style="font-size: 1.35rem; font-weight: 800; color: #F8FAFC !important; margin-top: 6px;">{str_val}</div>
 </div>
-<div style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 12px; padding: 18px;">
-<div style="font-size: 0.8rem; font-weight: 700; color: #475569 !important; text-transform: uppercase;">Functional Score</div>
-<div style="font-size: 1.35rem; font-weight: 800; color: #0F172A !important; margin-top: 6px;">{fn_val}</div>
+<div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 18px;">
+<div style="font-size: 0.8rem; font-weight: 700; color: #38BDF8 !important; text-transform: uppercase;">Functional Score</div>
+<div style="font-size: 1.35rem; font-weight: 800; color: #F8FAFC !important; margin-top: 6px;">{fn_val}</div>
 </div>
 </div>""", unsafe_allow_html=True)
-
-    st.markdown("#### Additional Clinical Indicators")
-    c5, c6, c7 = st.columns(3)
-    with c5:
-        st.markdown(f"**Gait Assessment:** {assessment['gait_status'] if (assessment and assessment.get('gait_status')) else 'Not assessed yet'}")
-    with c6:
-        st.markdown(f"**Swelling / Edema:** {assessment['swelling_status'] if (assessment and assessment.get('swelling_status')) else 'Not assessed yet'}")
-    with c7:
-        st.markdown(f"**Balance Grade:** {assessment['balance_score'] if (assessment and assessment.get('balance_score')) else 'Not assessed yet'}")
 
 # TAB 3: CARE PLAN
-with tabs[2]:
-    st.markdown("### Clinical Rehabilitation Care Plan")
-    if plan:
-        st.markdown(f"""<div style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-left: 6px solid #0284C7; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-<p style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #475569 !important; text-transform: uppercase;">{t['assigned_by']}: <span style="color:#0F172A !important;">{plan['assigned_by']}</span></p>
-<p style="margin: 4px 0; font-size: 1rem; font-weight: 700; color: #0F172A !important;">Condition: {p['diagnosis']}</p>
-<p style="margin: 4px 0; font-size: 0.95rem; font-weight: 700; color: #0284C7 !important;">{t['phase']}: {plan['phase_name']}</p>
-<p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #475569 !important;">{t['effective_from']}: {plan['effective_date']}</p>
+with tabs[3]:
+    st.markdown("### Active Clinical Care Plan & Prescribed Exercises")
+    if plan and plan.get('activities'):
+        for idx, act in enumerate(plan['activities'], start=1):
+            st.markdown(f"""<div style="background-color: #1E293B; border: 1px solid #334155; border-left: 4px solid #0EA5E9; border-radius: 10px; padding: 16px; margin-bottom: 12px;">
+<strong style="font-size: 1rem; color: #38BDF8 !important;">{idx}. {act['task']}</strong><br>
+<span style="font-size: 0.88rem; color: #E2E8F0 !important;">Prescribed Dosage: {act['reps']} | Frequency: {act['frequency']}</span>
 </div>""", unsafe_allow_html=True)
-
-        st.markdown("#### Prescribed Clinical Activities")
-        if plan.get('activities'):
-            for idx, act in enumerate(plan['activities'], start=1):
-                st.markdown(f"""<div style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 10px; padding: 14px 18px; margin-bottom: 10px;">
-<strong style="font-size: 1rem; color: #0F172A !important;">{idx}. {act['task']}</strong><br>
-<span style="font-size: 0.88rem; color: #334155 !important;">Prescribed Dosage: {act['reps']} | Frequency: {act['frequency']}</span>
-</div>""", unsafe_allow_html=True)
-    else:
-        st.info("No rehabilitation plan assigned yet by your rehabilitator.")
 
 # TAB 4: TELECONSULTATION
-with tabs[3]:
-    st.markdown("### Teleconsultation Session")
-    if tele and tele.get('meeting_url'):
-        st.markdown(f"""<div style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-top: 5px solid #0284C7; border-radius: 12px; padding: 20px;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-<div>
-<h3 style="margin:0; font-size: 1.15rem; font-weight: 800; color: #0F172A !important;">Scheduled Clinical Teleconsultation</h3>
-<p style="margin: 4px 0 0 0; font-size: 0.88rem; color: #475569 !important;">Host / Rehabilitator: {tele['host_rehabilitator']}</p>
-</div>
-<span style="background-color: #E0F2FE; color: #075985 !important; padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 0.85rem;">Scheduled</span>
-</div>
-<hr style="border-color: #CBD5E1; margin: 16px 0;">
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px;">
-<div><strong style="color: #475569 !important; font-size: 0.8rem; text-transform: uppercase;">Provider</strong><br><span style="color: #0F172A !important; font-weight: 700;">{tele['provider']}</span></div>
-<div><strong style="color: #475569 !important; font-size: 0.8rem; text-transform: uppercase;">Date & Time</strong><br><span style="color: #0F172A !important; font-weight: 700;">{tele['scheduled_date']} at {tele['scheduled_time']} ({tele['timezone']})</span></div>
-<div><strong style="color: #475569 !important; font-size: 0.8rem; text-transform: uppercase;">Meeting ID</strong><br><span style="color: #0F172A !important; font-weight: 700;">{tele['meeting_id']}</span></div>
-</div>
-<p style="color: #334155 !important;"><strong>Clinical Notes:</strong> {tele['notes']}</p>
-<div style="margin-top: 20px;">
-<a href="{tele['meeting_url']}" target="_blank" style="background-color: #0284C7; color: white !important; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; display: inline-block;">
-{t['join_meeting']}
+with tabs[4]:
+    st.markdown("### Teleconsultation Portal")
+    if tele:
+        st.markdown(f"""<div style="background-color: #1E293B; border: 1px solid #0EA5E9; border-radius: 12px; padding: 20px;">
+<h3 style="color: #38BDF8 !important; margin: 0 0 10px 0;">Scheduled Teleconsultation</h3>
+<p style="color: #E2E8F0 !important;"><strong>Provider:</strong> {tele['provider']}</p>
+<p style="color: #E2E8F0 !important;"><strong>Date & Time:</strong> {tele['scheduled_date']} at {tele['scheduled_time']} ({tele['timezone']})</p>
+<p style="color: #E2E8F0 !important;"><strong>Meeting ID:</strong> {tele['meeting_id']}</p>
+<p style="color: #94A3B8 !important;"><strong>Clinical Notes:</strong> {tele['notes']}</p>
+<div style="margin-top: 16px;">
+<a href="{tele['meeting_url']}" target="_blank" style="background-color: #0EA5E9; color: white !important; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; display: inline-block;">
+Join Video Consultation 📹
 </a>
 </div>
 </div>""", unsafe_allow_html=True)
-    else:
-        st.warning("No active teleconsultation session scheduled.")
 
-# TAB 5: DOCTOR CONSOLE (Conditional)
+# TAB 5: DOCTOR CONSOLE (IF AUTHORIZED)
 if portal_role == "Rehabilitator / Doctor":
-    with tabs[4]:
-        st.markdown("### Clinical Record & Teleconsultation Management")
-        st.caption("Authorized Rehabilitator Console for entering clinical measurements and scheduling sessions.")
-
-        with st.expander("1. Record Actual Clinical Assessment", expanded=True):
-            with st.form("assessment_form"):
-                rom_input = st.text_input("Range of Motion (e.g., 95 degrees Flexion)", value=assessment['rom_degrees'] if assessment else "")
-                pain_input = st.text_input("Pain Score (e.g., 3/10 VAS)", value=assessment['pain_score'] if assessment else "")
-                strength_input = st.text_input("Muscle Strength (e.g., 4/5 MRC Grade)", value=assessment['strength_grade'] if assessment else "")
-                functional_input = st.text_input("Functional Score (e.g., LEFS 45/80)", value=assessment['functional_score'] if assessment else "")
-                
-                if st.form_submit_button("Save Assessment Record"):
-                    conn = get_db_connection()
-                    cur = conn.cursor()
-                    cur.execute("""
-                    INSERT INTO clinical_assessments (patient_id, rom_degrees, pain_score, strength_grade, functional_score, assessment_date)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """, (logged_patient_id, rom_input, pain_input, strength_input, functional_input, datetime.now().strftime("%Y-%m-%d")))
-                    conn.commit()
-                    st.success("Clinical assessment successfully saved.")
-                    st.rerun()
-
-        with st.expander("2. Schedule / Update Teleconsultation Session"):
-            with st.form("teleconsult_form"):
-                t_provider = st.text_input("Provider Name", value="Enterprise Video Portal")
-                t_url = st.text_input("Meeting Link URL", value=tele['meeting_url'] if tele else "https://meet.jit.si/")
-                t_id = st.text_input("Meeting ID", value=tele['meeting_id'] if tele else "CONF-1001")
-                t_date = st.date_input("Scheduled Date", value=date.today())
-                t_time = st.time_input("Scheduled Time")
-                t_tz = st.text_input("Timezone", value="PKT (UTC+5)")
-                t_host = st.text_input("Host Rehabilitator Name", value="Dr. Ahmed Khan")
-                t_notes = st.text_area("Clinical Session Notes", value="Review range of motion progress and strength loading.")
-
-                if st.form_submit_button("Update Teleconsultation Schedule"):
-                    conn = get_db_connection()
-                    cur = conn.cursor()
-                    cur.execute("""
-                    INSERT INTO teleconsultations (patient_id, provider, meeting_url, meeting_id, scheduled_date, scheduled_time, timezone, host_rehabilitator, notes)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (logged_patient_id, t_provider, t_url, t_id, str(t_date), str(t_time), t_tz, t_host, t_notes))
-                    conn.commit()
-                    st.success("Teleconsultation session details updated.")
-                    st.rerun()
+    with tabs[5]:
+        st.markdown("### Doctor Console — Record Management")
+        with st.form("doctor_entry"):
+            rom_i = st.text_input("Range of Motion", value=assessment['rom_degrees'] if assessment else "")
+            pain_i = st.text_input("Pain Score", value=assessment['pain_score'] if assessment else "")
+            str_i = st.text_input("Muscle Strength", value=assessment['strength_grade'] if assessment else "")
+            fn_i = st.text_input("Functional Score", value=assessment['functional_score'] if assessment else "")
+            
+            if st.form_submit_button("Update Assessment Data"):
+                conn = get_db_connection()
+                cur = conn.cursor()
+                cur.execute("""
+                INSERT INTO clinical_assessments (patient_id, rom_degrees, pain_score, strength_grade, functional_score, assessment_date)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """, (logged_patient_id, rom_i, pain_i, str_i, fn_i, datetime.now().strftime("%Y-%m-%d")))
+                conn.commit()
+                st.success("Record updated successfully!")
+                st.rerun()
