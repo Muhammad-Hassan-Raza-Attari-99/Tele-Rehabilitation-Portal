@@ -1,8 +1,8 @@
 import streamlit as st
 import sqlite3
-import hashlib
-from datetime import datetime, date, time as dt_time
-from urllib.parse import urlparse
+import json
+from datetime import datetime, date
+from pathlib import Path
 
 # ============================================================
 # TELE REHABILITATION PORTAL
@@ -16,605 +16,695 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ============================================================
-# CONFIGURATION
-# ============================================================
-
 DB_FILE = "tele_rehabilitation.db"
 
-ROLE_PATIENT = "Patient"
-ROLE_REHAB = "Rehabilitation Professional"
-ROLE_HOST = "Meeting Host"
-ROLE_ADMIN = "Clinical Administrator"
-
-ROLES = [
-    ROLE_PATIENT,
-    ROLE_REHAB,
-    ROLE_HOST,
-    ROLE_ADMIN,
-]
-
-LANGUAGES = [
-    "English",
-    "Urdu",
-    "Arabic",
-    "Hindi",
-    "Punjabi",
-    "Sindhi",
-    "Pashto",
-    "Bengali",
-    "French",
-    "Spanish",
-    "Other",
-]
-
-BODY_REGIONS = [
-    "Not specified",
-    "Head / Neck",
-    "Shoulder",
-    "Elbow",
-    "Wrist / Hand",
-    "Chest / Thorax",
-    "Upper Back",
-    "Lower Back",
-    "Hip",
-    "Knee",
-    "Ankle / Foot",
-    "Multiple regions",
-    "Other",
-]
-
-DIAGNOSIS_STATUS = [
-    "Not yet documented",
-    "Under assessment",
-    "Clinically documented",
-    "Referred for further assessment",
-]
 
 # ============================================================
 # DATABASE
 # ============================================================
 
 def get_connection():
-    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return sqlite3.connect(DB_FILE, check_same_thread=False)
 
 
 def database_initialized():
-    try:
-        conn = get_connection()
-        row = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='patients'"
-        ).fetchone()
-        conn.close()
-        return row is not None
-    except Exception:
-        return False
-
-
-def database_init():
     conn = get_connection()
+    cur = conn.cursor()
 
-    conn.executescript(
-        """
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS patients (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id TEXT UNIQUE NOT NULL,
-            first_name TEXT NOT NULL,
-            last_name TEXT NOT NULL,
+            patient_id TEXT PRIMARY KEY,
+            full_name TEXT,
             date_of_birth TEXT,
             sex TEXT,
-            country TEXT,
-            preferred_language TEXT,
-            timezone TEXT,
-            email TEXT,
             phone TEXT,
+            email TEXT,
+            country TEXT,
+            city TEXT,
+            preferred_language TEXT,
             emergency_contact TEXT,
             emergency_phone TEXT,
+
             diagnosis TEXT,
-            diagnosis_status TEXT,
-            affected_region TEXT,
-            diagnosis_details TEXT,
-            medical_record_reference TEXT,
-            clinical_notes TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        );
+            diagnosis_date TEXT,
+            affected_organ TEXT,
+            affected_side TEXT,
+            diagnosis_notes TEXT,
 
-        CREATE TABLE IF NOT EXISTS clinical_measurements (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id TEXT NOT NULL,
-            measurement_name TEXT NOT NULL,
-            value TEXT,
-            unit TEXT,
-            recorded_by TEXT,
-            recorded_at TEXT NOT NULL,
-            notes TEXT
-        );
+            medical_history TEXT,
+            medications TEXT,
+            allergies TEXT,
+            previous_surgery TEXT,
+            previous_rehabilitation TEXT,
 
-        CREATE TABLE IF NOT EXISTS rehabilitation_plans (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id TEXT NOT NULL,
-            plan_title TEXT NOT NULL,
-            goals TEXT,
-            precautions TEXT,
-            frequency TEXT,
-            duration TEXT,
-            clinical_instructions TEXT,
-            created_by TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        );
+            functional_limitations TEXT,
+            pain_score TEXT,
+            pain_location TEXT,
 
-        CREATE TABLE IF NOT EXISTS meetings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            patient_id TEXT NOT NULL,
-            meeting_title TEXT,
-            provider TEXT,
-            meeting_url TEXT,
-            meeting_date TEXT,
-            meeting_time TEXT,
-            host_name TEXT,
-            notes TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        );
+            rom_available INTEGER DEFAULT 0,
+            rom_value TEXT,
+            rom_joint TEXT,
+            rom_measurement_date TEXT,
+            rom_source TEXT,
 
-        CREATE TABLE IF NOT EXISTS activity_log (
+            mr_link TEXT,
+            clinical_documents TEXT,
+
+            meeting_platform TEXT,
+            meeting_link TEXT,
+            meeting_notes TEXT,
+
+            assigned_rehabilitator TEXT,
+            care_plan_status TEXT,
+
+            created_at TEXT,
+            updated_at TEXT
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             patient_id TEXT,
-            actor_role TEXT,
-            actor_name TEXT,
-            action TEXT,
-            created_at TEXT NOT NULL
-        );
-        """
-    )
-
-    # --------------------------------------------------------
-    # DEMO DATA
-    # --------------------------------------------------------
-
-    patient = conn.execute(
-        "SELECT patient_id FROM patients WHERE patient_id=?",
-        ("TRP-1001",),
-    ).fetchone()
-
-    if not patient:
-        now = datetime.now().isoformat(timespec="seconds")
-
-        conn.execute(
-            """
-            INSERT INTO patients (
-                patient_id,
-                first_name,
-                last_name,
-                date_of_birth,
-                sex,
-                country,
-                preferred_language,
-                timezone,
-                email,
-                phone,
-                emergency_contact,
-                emergency_phone,
-                diagnosis,
-                diagnosis_status,
-                affected_region,
-                diagnosis_details,
-                medical_record_reference,
-                clinical_notes,
-                created_at,
-                updated_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                "TRP-1001",
-                "Demo",
-                "Patient",
-                "1990-01-15",
-                "Prefer not to say",
-                "Pakistan",
-                "English",
-                "Asia/Karachi",
-                "patient@example.com",
-                "",
-                "",
-                "",
-                "",
-                "Not yet documented",
-                "Not specified",
-                "",
-                "",
-                "",
-                now,
-                now,
-            ),
+            professional_name TEXT,
+            professional_role TEXT,
+            specialty TEXT,
+            appointment_date TEXT,
+            appointment_time TEXT,
+            platform TEXT,
+            meeting_link TEXT,
+            notes TEXT,
+            status TEXT,
+            created_at TEXT
         )
-
-    plan = conn.execute(
-        "SELECT id FROM rehabilitation_plans WHERE patient_id=?",
-        ("TRP-1001",),
-    ).fetchone()
-
-    if not plan:
-        now = datetime.now().isoformat(timespec="seconds")
-
-        conn.execute(
-            """
-            INSERT INTO rehabilitation_plans (
-                patient_id,
-                plan_title,
-                goals,
-                precautions,
-                frequency,
-                duration,
-                clinical_instructions,
-                created_by,
-                created_at,
-                updated_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                "TRP-1001",
-                "Initial rehabilitation plan",
-                "Clinical assessment and individualized rehabilitation planning.",
-                "Follow the rehabilitation professional's instructions.",
-                "As clinically prescribed",
-                "To be determined",
-                "No exercise prescription has been entered yet.",
-                "Clinical Team",
-                now,
-                now,
-            ),
-        )
+    """)
 
     conn.commit()
     conn.close()
 
 
-# Do NOT use @st.cache_resource for database initialization.
-# This prevents the database initialization problem shown in the screenshot.
-database_init()
+database_initialized()
+
 
 # ============================================================
 # DATABASE HELPERS
 # ============================================================
 
-def query_one(sql, params=()):
+def get_patient(patient_id):
     conn = get_connection()
-    row = conn.execute(sql, params).fetchone()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT * FROM patients WHERE patient_id = ?",
+        (patient_id,)
+    )
+
+    row = cur.fetchone()
     conn.close()
-    return row
+
+    return dict(row) if row else None
 
 
-def query_all(sql, params=()):
+def get_all_patients():
     conn = get_connection()
-    rows = conn.execute(sql, params).fetchall()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT * FROM patients ORDER BY updated_at DESC"
+    )
+
+    rows = cur.fetchall()
     conn.close()
-    return rows
+
+    return [dict(row) for row in rows]
 
 
-def execute_sql(sql, params=()):
+def save_patient(data):
     conn = get_connection()
-    cur = conn.execute(sql, params)
+    cur = conn.cursor()
+
+    now = datetime.now().isoformat(timespec="seconds")
+
+    existing = get_patient(data["patient_id"])
+
+    if existing:
+        cur.execute("""
+            UPDATE patients SET
+                full_name = ?,
+                date_of_birth = ?,
+                sex = ?,
+                phone = ?,
+                email = ?,
+                country = ?,
+                city = ?,
+                preferred_language = ?,
+                emergency_contact = ?,
+                emergency_phone = ?,
+
+                diagnosis = ?,
+                diagnosis_date = ?,
+                affected_organ = ?,
+                affected_side = ?,
+                diagnosis_notes = ?,
+
+                medical_history = ?,
+                medications = ?,
+                allergies = ?,
+                previous_surgery = ?,
+                previous_rehabilitation = ?,
+
+                functional_limitations = ?,
+                pain_score = ?,
+                pain_location = ?,
+
+                rom_available = ?,
+                rom_value = ?,
+                rom_joint = ?,
+                rom_measurement_date = ?,
+                rom_source = ?,
+
+                mr_link = ?,
+                clinical_documents = ?,
+
+                meeting_platform = ?,
+                meeting_link = ?,
+                meeting_notes = ?,
+
+                assigned_rehabilitator = ?,
+                care_plan_status = ?,
+                updated_at = ?
+
+            WHERE patient_id = ?
+        """, (
+            data["full_name"],
+            data["date_of_birth"],
+            data["sex"],
+            data["phone"],
+            data["email"],
+            data["country"],
+            data["city"],
+            data["preferred_language"],
+            data["emergency_contact"],
+            data["emergency_phone"],
+
+            data["diagnosis"],
+            data["diagnosis_date"],
+            data["affected_organ"],
+            data["affected_side"],
+            data["diagnosis_notes"],
+
+            data["medical_history"],
+            data["medications"],
+            data["allergies"],
+            data["previous_surgery"],
+            data["previous_rehabilitation"],
+
+            data["functional_limitations"],
+            data["pain_score"],
+            data["pain_location"],
+
+            data["rom_available"],
+            data["rom_value"],
+            data["rom_joint"],
+            data["rom_measurement_date"],
+            data["rom_source"],
+
+            data["mr_link"],
+            data["clinical_documents"],
+
+            data["meeting_platform"],
+            data["meeting_link"],
+            data["meeting_notes"],
+
+            data["assigned_rehabilitator"],
+            data["care_plan_status"],
+            now,
+
+            data["patient_id"],
+        ))
+
+    else:
+        cur.execute("""
+            INSERT INTO patients (
+                patient_id,
+                full_name,
+                date_of_birth,
+                sex,
+                phone,
+                email,
+                country,
+                city,
+                preferred_language,
+                emergency_contact,
+                emergency_phone,
+
+                diagnosis,
+                diagnosis_date,
+                affected_organ,
+                affected_side,
+                diagnosis_notes,
+
+                medical_history,
+                medications,
+                allergies,
+                previous_surgery,
+                previous_rehabilitation,
+
+                functional_limitations,
+                pain_score,
+                pain_location,
+
+                rom_available,
+                rom_value,
+                rom_joint,
+                rom_measurement_date,
+                rom_source,
+
+                mr_link,
+                clinical_documents,
+
+                meeting_platform,
+                meeting_link,
+                meeting_notes,
+
+                assigned_rehabilitator,
+                care_plan_status,
+
+                created_at,
+                updated_at
+            )
+            VALUES (
+                ?,?,?,?,?,?,?,?,?,?,
+                ?,?,?,?,?,?,?,?,?,?,
+                ?,?,
+                ?,?,?,?,?,?,
+                ?,?,
+                ?,?,
+                ?,?,
+                ?,?,
+                ?,?
+            )
+        """, (
+            data["patient_id"],
+            data["full_name"],
+            data["date_of_birth"],
+            data["sex"],
+            data["phone"],
+            data["email"],
+            data["country"],
+            data["city"],
+            data["preferred_language"],
+            data["emergency_contact"],
+            data["emergency_phone"],
+
+            data["diagnosis"],
+            data["diagnosis_date"],
+            data["affected_organ"],
+            data["affected_side"],
+            data["diagnosis_notes"],
+
+            data["medical_history"],
+            data["medications"],
+            data["allergies"],
+            data["previous_surgery"],
+            data["previous_rehabilitation"],
+
+            data["functional_limitations"],
+            data["pain_score"],
+            data["pain_location"],
+
+            data["rom_available"],
+            data["rom_value"],
+            data["rom_joint"],
+            data["rom_measurement_date"],
+            data["rom_source"],
+
+            data["mr_link"],
+            data["clinical_documents"],
+
+            data["meeting_platform"],
+            data["meeting_link"],
+            data["meeting_notes"],
+
+            data["assigned_rehabilitator"],
+            data["care_plan_status"],
+
+            now,
+            now,
+        ))
+
     conn.commit()
-    last_id = cur.lastrowid
     conn.close()
-    return last_id
 
 
-def now_string():
-    return datetime.now().isoformat(timespec="seconds")
+def save_appointment(
+    patient_id,
+    professional_name,
+    professional_role,
+    specialty,
+    appointment_date,
+    appointment_time,
+    platform,
+    meeting_link,
+    notes,
+):
+    conn = get_connection()
+    cur = conn.cursor()
 
-
-def log_activity(patient_id, role, actor_name, action):
-    execute_sql(
-        """
-        INSERT INTO activity_log
-        (patient_id, actor_role, actor_name, action, created_at)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (
+    cur.execute("""
+        INSERT INTO appointments (
             patient_id,
-            role,
-            actor_name,
-            action,
-            now_string(),
-        ),
-    )
+            professional_name,
+            professional_role,
+            specialty,
+            appointment_date,
+            appointment_time,
+            platform,
+            meeting_link,
+            notes,
+            status,
+            created_at
+        )
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    """, (
+        patient_id,
+        professional_name,
+        professional_role,
+        specialty,
+        appointment_date,
+        appointment_time,
+        platform,
+        meeting_link,
+        notes,
+        "Scheduled",
+        datetime.now().isoformat(timespec="seconds"),
+    ))
+
+    conn.commit()
+    conn.close()
+
+
+def get_appointments(patient_id):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT *
+        FROM appointments
+        WHERE patient_id = ?
+        ORDER BY appointment_date ASC, appointment_time ASC
+    """, (patient_id,))
+
+    rows = cur.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
 
 
 # ============================================================
-# VALIDATION
+# PROFESSIONAL UI
 # ============================================================
 
-def valid_url(url):
-    if not url:
-        return False
+st.markdown("""
+<style>
 
-    try:
-        parsed = urlparse(url)
-        return parsed.scheme in ("http", "https") and bool(parsed.netloc)
-    except Exception:
-        return False
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+html, body, [class*="css"] {
+    font-family: "Inter", sans-serif;
+}
 
-def make_patient_id(first_name, last_name):
-    base = (
-        first_name.strip().upper()[:3]
-        + last_name.strip().upper()[:3]
-    )
+.stApp {
+    background: #f5f7fa;
+    color: #162033;
+}
 
-    digest = hashlib.sha1(
-        f"{first_name}{last_name}{datetime.now().isoformat()}".encode()
-    ).hexdigest()[:4].upper()
+.block-container {
+    max-width: 1500px;
+    padding-top: 1.2rem;
+    padding-bottom: 4rem;
+}
 
-    return f"TRP-{base}-{digest}"
+/* ---------------------------------------------------------
+   SIDEBAR
+--------------------------------------------------------- */
 
+section[data-testid="stSidebar"] {
+    background: #ffffff;
+    border-right: 1px solid #dfe5ec;
+}
 
-# ============================================================
-# CSS
-# ============================================================
+section[data-testid="stSidebar"] > div {
+    padding-top: 1.5rem;
+}
 
-st.markdown(
-    """
-    <style>
+.sidebar-brand {
+    font-size: 23px;
+    font-weight: 800;
+    color: #14213d;
+    margin-bottom: 4px;
+}
 
-    /* --------------------------------------------------------
-       GLOBAL
-    -------------------------------------------------------- */
+.sidebar-subtitle {
+    color: #697586;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 28px;
+}
 
-    html, body, [class*="css"] {
-        font-family:
-            Inter,
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            sans-serif;
-    }
+/* ---------------------------------------------------------
+   HEADER
+--------------------------------------------------------- */
 
-    .stApp {
-        background: #f5f7fa;
-        color: #172033;
-    }
+.portal-header {
+    background: #ffffff;
+    border: 1px solid #dfe5ec;
+    border-radius: 18px;
+    padding: 28px 32px;
+    margin-bottom: 22px;
+    box-shadow: 0 5px 18px rgba(30, 50, 80, 0.05);
+}
 
-    .block-container {
-        max-width: 1500px;
-        padding-top: 1.5rem;
-        padding-bottom: 3rem;
-    }
+.portal-title {
+    font-size: 34px;
+    font-weight: 800;
+    color: #12213a;
+    margin: 0;
+}
 
-    /* --------------------------------------------------------
-       SIDEBAR
-    -------------------------------------------------------- */
+.portal-subtitle {
+    color: #687588;
+    font-size: 15px;
+    margin-top: 7px;
+}
 
-    section[data-testid="stSidebar"] {
-        background: #ffffff;
-        border-right: 1px solid #e2e7ef;
-    }
+/* ---------------------------------------------------------
+   CARDS
+--------------------------------------------------------- */
 
-    section[data-testid="stSidebar"] * {
-        color: #172033;
-    }
+.clinical-card {
+    background: #ffffff;
+    border: 1px solid #dfe5ec;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 15px rgba(30, 50, 80, 0.04);
+}
 
-    /* --------------------------------------------------------
-       HEADER
-    -------------------------------------------------------- */
+.card-title {
+    font-size: 20px;
+    font-weight: 750;
+    color: #14213d;
+    margin-bottom: 7px;
+}
 
-    .portal-header {
-        background: #ffffff;
-        border: 1px solid #e0e6ee;
-        border-radius: 14px;
-        padding: 24px 28px;
-        margin-bottom: 20px;
-    }
+.card-description {
+    color: #697586;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
 
-    .portal-title {
-        font-size: 30px;
-        font-weight: 750;
-        letter-spacing: -0.6px;
-        color: #13233a;
-        margin-bottom: 5px;
-    }
+/* ---------------------------------------------------------
+   PATIENT SUMMARY
+--------------------------------------------------------- */
 
-    .portal-subtitle {
-        font-size: 15px;
-        color: #637083;
-    }
+.patient-name {
+    font-size: 28px;
+    font-weight: 800;
+    color: #10213b;
+}
 
-    /* --------------------------------------------------------
-       CARDS
-    -------------------------------------------------------- */
+.patient-id {
+    font-size: 14px;
+    color: #6b7788;
+    margin-top: 4px;
+}
 
-    .clinical-card {
-        background: #ffffff;
-        border: 1px solid #e0e6ee;
-        border-radius: 14px;
-        padding: 22px;
-        margin-bottom: 18px;
-        box-shadow: 0 2px 8px rgba(20, 35, 55, 0.035);
-    }
+.info-label {
+    color: #718096;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
 
-    .clinical-card h3 {
-        color: #13233a;
-        margin-top: 0;
-        margin-bottom: 12px;
-    }
+.info-value {
+    color: #17243b;
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 3px;
+}
 
-    .section-title {
-        color: #13233a;
-        font-size: 22px;
-        font-weight: 720;
-        margin-top: 8px;
-        margin-bottom: 15px;
-    }
+/* ---------------------------------------------------------
+   STATUS
+--------------------------------------------------------- */
 
-    .field-label {
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: .55px;
-        color: #718096;
-        font-weight: 650;
-        margin-bottom: 4px;
-    }
+.status-complete {
+    background: #e9f7ef;
+    color: #18794e;
+    border: 1px solid #b9e4cc;
+    padding: 8px 13px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    display: inline-block;
+}
 
-    .field-value {
-        font-size: 16px;
-        color: #182338;
-        font-weight: 550;
-        margin-bottom: 15px;
-    }
+.status-pending {
+    background: #fff6df;
+    color: #8a6200;
+    border: 1px solid #eed58d;
+    padding: 8px 13px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    display: inline-block;
+}
 
-    .muted {
-        color: #68768a;
-        font-size: 14px;
-    }
+.status-neutral {
+    background: #eef2f6;
+    color: #556273;
+    border: 1px solid #d9e0e7;
+    padding: 8px 13px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    display: inline-block;
+}
 
-    .not-recorded {
-        color: #7a8492;
-        font-style: italic;
-    }
+/* ---------------------------------------------------------
+   PHASES
+--------------------------------------------------------- */
 
-    /* --------------------------------------------------------
-       PATIENT HEADER
-    -------------------------------------------------------- */
+.phase-card {
+    background: #ffffff;
+    border: 1px solid #dfe5ec;
+    border-radius: 14px;
+    padding: 20px;
+    min-height: 135px;
+}
 
-    .patient-banner {
-        background: #ffffff;
-        border: 1px solid #dfe5ed;
-        border-radius: 14px;
-        padding: 24px;
-        margin-bottom: 22px;
-    }
+.phase-number {
+    color: #526173;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
 
-    .patient-name {
-        font-size: 27px;
-        font-weight: 750;
-        color: #13233a;
-    }
+.phase-title {
+    color: #14213d;
+    font-size: 18px;
+    font-weight: 750;
+    margin-top: 9px;
+}
 
-    .patient-id {
-        color: #64748b;
-        font-size: 14px;
-        margin-top: 3px;
-    }
+.phase-state {
+    color: #687588;
+    font-size: 13px;
+    margin-top: 8px;
+}
 
-    /* --------------------------------------------------------
-       MEETING
-    -------------------------------------------------------- */
+/* ---------------------------------------------------------
+   MEETING
+--------------------------------------------------------- */
 
-    .meeting-card {
-        background: #f8fbff;
-        border: 1px solid #cfddec;
-        border-radius: 14px;
-        padding: 22px;
-        margin-bottom: 18px;
-    }
+.meeting-card {
+    background: #f8fbff;
+    border: 1px solid #cfddeb;
+    border-radius: 15px;
+    padding: 22px;
+}
 
-    .meeting-title {
-        color: #13233a;
-        font-size: 21px;
-        font-weight: 720;
-    }
+.meeting-title {
+    font-size: 19px;
+    font-weight: 750;
+    color: #14213d;
+}
 
-    /* --------------------------------------------------------
-       STATUS
-    -------------------------------------------------------- */
+.meeting-meta {
+    color: #66758a;
+    font-size: 14px;
+    margin-top: 7px;
+}
 
-    .status-ok {
-        display: inline-block;
-        padding: 5px 10px;
-        border-radius: 6px;
-        background: #edf8f1;
-        color: #237344;
-        font-size: 13px;
-        font-weight: 650;
-    }
+/* ---------------------------------------------------------
+   REMOVE STREAMLIT CODE-LIKE LOOK
+--------------------------------------------------------- */
 
-    .status-warning {
-        display: inline-block;
-        padding: 5px 10px;
-        border-radius: 6px;
-        background: #fff7e8;
-        color: #8a5b12;
-        font-size: 13px;
-        font-weight: 650;
-    }
+pre {
+    display: none !important;
+}
 
-    .status-info {
-        display: inline-block;
-        padding: 5px 10px;
-        border-radius: 6px;
-        background: #eef5ff;
-        color: #315f9d;
-        font-size: 13px;
-        font-weight: 650;
-    }
+code {
+    font-family: inherit !important;
+}
 
-    /* --------------------------------------------------------
-       NOTICE
-    -------------------------------------------------------- */
+[data-testid="stMarkdownContainer"] pre {
+    display: none !important;
+}
 
-    .clinical-notice {
-        background: #f8fafc;
-        border-left: 4px solid #607d9f;
-        padding: 13px 16px;
-        border-radius: 6px;
-        color: #445268;
-        margin-bottom: 16px;
-        font-size: 14px;
-    }
+/* ---------------------------------------------------------
+   BUTTONS
+--------------------------------------------------------- */
 
-    /* --------------------------------------------------------
-       BUTTONS
-    -------------------------------------------------------- */
+.stButton > button {
+    border-radius: 9px;
+    min-height: 42px;
+    font-weight: 650;
+    border: 1px solid #cfd7e2;
+}
 
-    .stButton > button {
-        border-radius: 8px;
-        font-weight: 650;
-        min-height: 42px;
-    }
+.stButton > button:hover {
+    border-color: #8391a5;
+}
 
-    /* --------------------------------------------------------
-       MOBILE
-    -------------------------------------------------------- */
+/* ---------------------------------------------------------
+   INPUTS
+--------------------------------------------------------- */
 
-    @media (max-width: 800px) {
-        .block-container {
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
+div[data-baseweb="input"] > div,
+div[data-baseweb="select"] > div,
+textarea {
+    border-radius: 8px !important;
+}
 
-        .portal-title {
-            font-size: 24px;
-        }
+</style>
+""", unsafe_allow_html=True)
 
-        .patient-name {
-            font-size: 23px;
-        }
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 # ============================================================
 # SESSION STATE
 # ============================================================
 
-if "role" not in st.session_state:
-    st.session_state.role = ROLE_PATIENT
+if "portal_role" not in st.session_state:
+    st.session_state.portal_role = "Patient"
 
 if "patient_id" not in st.session_state:
     st.session_state.patient_id = "TRP-1001"
-
-if "page" not in st.session_state:
-    st.session_state.page = "Dashboard"
 
 
 # ============================================================
@@ -624,1563 +714,1351 @@ if "page" not in st.session_state:
 with st.sidebar:
 
     st.markdown(
-        """
-        <div style="padding: 8px 0 20px 0;">
-            <div style="
-                font-size:22px;
-                font-weight:750;
-                color:#13233a;
-            ">
-                TeleRehabilitation
-            </div>
+        '<div class="sidebar-brand">TeleRehabilitation</div>',
+        unsafe_allow_html=True
+    )
 
-            <div style="
-                margin-top:6px;
-                color:#6b7788;
-                font-size:14px;
-                line-height:1.5;
-            ">
-                Clinical tele-rehabilitation portal
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.markdown(
+        '<div class="sidebar-subtitle">'
+        'Clinical care coordination and secure tele-rehabilitation management'
+        '</div>',
+        unsafe_allow_html=True
     )
 
     st.divider()
 
     role = st.selectbox(
         "Portal role",
-        ROLES,
-        index=ROLES.index(st.session_state.role),
+        [
+            "Patient",
+            "Rehabilitator",
+            "Doctor",
+            "Meeting Host",
+            "Clinical Administrator",
+        ],
+        index=[
+            "Patient",
+            "Rehabilitator",
+            "Doctor",
+            "Meeting Host",
+            "Clinical Administrator",
+        ].index(st.session_state.portal_role),
     )
 
-    st.session_state.role = role
+    st.session_state.portal_role = role
 
-    patients = query_all(
-        """
-        SELECT patient_id, first_name, last_name
-        FROM patients
-        ORDER BY first_name, last_name
-        """
-    )
+    patients = get_all_patients()
 
-    patient_options = [
-        f"{p['patient_id']} — {p['first_name']} {p['last_name']}"
-        for p in patients
-    ]
+    if not patients:
+        st.session_state.patient_id = "TRP-1001"
 
     patient_ids = [p["patient_id"] for p in patients]
 
-    if patient_ids:
-        current_index = (
+    if not patient_ids:
+        patient_ids = ["TRP-1001"]
+
+    selected_patient = st.selectbox(
+        "Patient record",
+        patient_ids,
+        index=(
             patient_ids.index(st.session_state.patient_id)
             if st.session_state.patient_id in patient_ids
             else 0
         )
-
-        selected_patient = st.selectbox(
-            "Patient record",
-            patient_options,
-            index=current_index,
-        )
-
-        selected_patient_id = selected_patient.split(" — ")[0]
-        st.session_state.patient_id = selected_patient_id
-
-    st.divider()
-
-    # Navigation differs according to role.
-    if role == ROLE_PATIENT:
-        navigation = [
-            "Dashboard",
-            "My Clinical Record",
-            "Rehabilitation Plan",
-            "Teleconsultation",
-        ]
-
-    elif role == ROLE_REHAB:
-        navigation = [
-            "Dashboard",
-            "Patient Record",
-            "Diagnosis & Assessment",
-            "Clinical Measurements",
-            "Rehabilitation Plan",
-            "Teleconsultation",
-        ]
-
-    elif role == ROLE_HOST:
-        navigation = [
-            "Dashboard",
-            "Patient Record",
-            "Teleconsultation",
-        ]
-
-    else:
-        navigation = [
-            "Dashboard",
-            "Patient Record",
-            "Diagnosis & Assessment",
-            "Clinical Measurements",
-            "Rehabilitation Plan",
-            "Teleconsultation",
-            "System Overview",
-        ]
-
-    page = st.radio(
-        "Portal navigation",
-        navigation,
-        index=(
-            navigation.index(st.session_state.page)
-            if st.session_state.page in navigation
-            else 0
-        ),
     )
 
-    st.session_state.page = page
+    st.session_state.patient_id = selected_patient
 
     st.divider()
 
     st.caption(
-        "Production deployment should connect authenticated users "
-        "to server-side authorization and a secure clinical database."
+        "Production deployment should connect portal roles "
+        "to authenticated identity and server-side authorization."
     )
 
 
 # ============================================================
-# LOAD PATIENT
+# CURRENT PATIENT
 # ============================================================
 
-patient = query_one(
-    """
-    SELECT *
-    FROM patients
-    WHERE patient_id=?
-    """,
-    (st.session_state.patient_id,),
-)
-
-if not patient:
-    st.error("The selected patient record could not be loaded.")
-    st.stop()
-
-
-patient_full_name = f"{patient['first_name']} {patient['last_name']}"
+patient = get_patient(st.session_state.patient_id)
 
 
 # ============================================================
 # HEADER
 # ============================================================
 
-st.markdown(
-    """
-    <div class="portal-header">
-        <div class="portal-title">
-            TeleRehabilitation Portal
-        </div>
+st.markdown("""
+<div class="portal-header">
 
-        <div class="portal-subtitle">
-            Clinical care coordination, patient records and
-            secure tele-rehabilitation management
+    <div class="portal-title">
+        TeleRehabilitation Portal
+    </div>
+
+    <div class="portal-subtitle">
+        Secure clinical coordination, patient records, rehabilitation
+        management and teleconsultation access
+    </div>
+
+</div>
+""", unsafe_allow_html=True)
+
+
+# ============================================================
+# FIRST-TIME PATIENT RECORD
+# ============================================================
+
+if patient is None:
+
+    st.markdown("""
+    <div class="clinical-card">
+        <div class="card-title">Patient record not yet completed</div>
+        <div class="card-description">
+            Clinical information must be entered before rehabilitation
+            measurements or treatment decisions can be displayed.
         </div>
     </div>
-    """,
-    unsafe_allow_html=True,
-)
+    """, unsafe_allow_html=True)
 
-
-# ============================================================
-# COMMON PATIENT BANNER
-# ============================================================
-
-def render_patient_banner():
-
-    st.markdown(
-        f"""
-        <div class="patient-banner">
-            <div class="patient-name">
-                {patient_full_name}
-            </div>
-
-            <div class="patient-id">
-                Patient ID: {patient['patient_id']}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.warning(
+        "No patient record exists for this patient ID. "
+        "Complete the patient profile below."
     )
 
+    with st.form("new_patient_form"):
 
-# ============================================================
-# DASHBOARD
-# ============================================================
-
-def dashboard():
-
-    render_patient_banner()
-
-    st.markdown(
-        '<div class="section-title">Patient Overview</div>',
-        unsafe_allow_html=True,
-    )
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.markdown(
-            '<div class="clinical-card">'
-            '<div class="field-label">Country</div>',
-            unsafe_allow_html=True,
-        )
-        st.write(patient["country"] or "Not recorded")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(
-            '<div class="clinical-card">'
-            '<div class="field-label">Preferred language</div>',
-            unsafe_allow_html=True,
-        )
-        st.write(patient["preferred_language"] or "Not recorded")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col3:
-        st.markdown(
-            '<div class="clinical-card">'
-            '<div class="field-label">Affected region</div>',
-            unsafe_allow_html=True,
-        )
-        st.write(patient["affected_region"] or "Not specified")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col4:
-        st.markdown(
-            '<div class="clinical-card">'
-            '<div class="field-label">Diagnosis status</div>',
-            unsafe_allow_html=True,
-        )
-        st.write(patient["diagnosis_status"] or "Not documented")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown(
-        '<div class="section-title">Clinical Information</div>',
-        unsafe_allow_html=True,
-    )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown(
-            '<div class="clinical-card"><h3>Diagnosis</h3>',
-            unsafe_allow_html=True,
-        )
-
-        diagnosis = patient["diagnosis"]
-
-        if diagnosis:
-            st.write(diagnosis)
-        else:
-            st.markdown(
-                '<span class="not-recorded">Not recorded by the rehabilitation professional.</span>',
-                unsafe_allow_html=True,
-            )
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(
-            '<div class="clinical-card"><h3>Diagnosis Details</h3>',
-            unsafe_allow_html=True,
-        )
-
-        details = patient["diagnosis_details"]
-
-        if details:
-            st.write(details)
-        else:
-            st.markdown(
-                '<span class="not-recorded">No clinical diagnosis details have been entered.</span>',
-                unsafe_allow_html=True,
-            )
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # --------------------------------------------------------
-    # ROM
-    # --------------------------------------------------------
-
-    st.markdown(
-        '<div class="section-title">Clinical Measurements</div>',
-        unsafe_allow_html=True,
-    )
-
-    rom = query_one(
-        """
-        SELECT *
-        FROM clinical_measurements
-        WHERE patient_id=?
-        AND measurement_name='Range of Motion'
-        ORDER BY id DESC
-        LIMIT 1
-        """,
-        (patient["patient_id"],),
-    )
-
-    st.markdown(
-        '<div class="clinical-card">',
-        unsafe_allow_html=True,
-    )
-
-    if rom and rom["value"]:
-        c1, c2, c3 = st.columns(3)
-
-        with c1:
-            st.markdown(
-                '<div class="field-label">Range of Motion</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                f'<div class="field-value">{rom["value"]} {rom["unit"] or ""}</div>',
-                unsafe_allow_html=True,
-            )
-
-        with c2:
-            st.markdown(
-                '<div class="field-label">Recorded by</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                f'<div class="field-value">{rom["recorded_by"] or "Clinical Team"}</div>',
-                unsafe_allow_html=True,
-            )
-
-        with c3:
-            st.markdown(
-                '<div class="field-label">Recorded</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                f'<div class="field-value">{rom["recorded_at"]}</div>',
-                unsafe_allow_html=True,
-            )
-
-        if rom["notes"]:
-            st.caption(rom["notes"])
-
-    else:
-        st.markdown(
-            """
-            <div class="clinical-notice">
-                Range of motion has not been recorded in this patient
-                record. No ROM value is being estimated or generated
-                automatically.
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # --------------------------------------------------------
-    # PLAN
-    # --------------------------------------------------------
-
-    plan = query_one(
-        """
-        SELECT *
-        FROM rehabilitation_plans
-        WHERE patient_id=?
-        ORDER BY id DESC
-        LIMIT 1
-        """,
-        (patient["patient_id"],),
-    )
-
-    st.markdown(
-        '<div class="section-title">Rehabilitation Plan</div>',
-        unsafe_allow_html=True,
-    )
-
-    if plan:
-
-        st.markdown(
-            '<div class="clinical-card">',
-            unsafe_allow_html=True,
-        )
-
-        st.subheader(plan["plan_title"])
+        st.subheader("Patient profile")
 
         c1, c2 = st.columns(2)
 
         with c1:
-            st.markdown("**Clinical goals**")
-            st.write(
-                plan["goals"]
-                or "No goals have been entered."
+            full_name = st.text_input("Full name")
+            dob = st.date_input(
+                "Date of birth",
+                value=date(2000, 1, 1),
+                min_value=date(1900, 1, 1),
+                max_value=date.today(),
             )
-
-            st.markdown("**Frequency**")
-            st.write(
-                plan["frequency"]
-                or "Not specified."
+            sex = st.selectbox(
+                "Sex",
+                ["Not specified", "Female", "Male", "Other"]
             )
+            phone = st.text_input("Phone")
+            email = st.text_input("Email")
 
         with c2:
-            st.markdown("**Precautions**")
-            st.write(
-                plan["precautions"]
-                or "No precautions recorded."
+            country = st.text_input("Country")
+            city = st.text_input("City")
+            language = st.selectbox(
+                "Preferred language",
+                [
+                    "English",
+                    "Urdu",
+                    "Arabic",
+                    "Spanish",
+                    "French",
+                    "German",
+                    "Other",
+                ],
             )
+            emergency_contact = st.text_input("Emergency contact")
+            emergency_phone = st.text_input("Emergency contact phone")
 
-            st.markdown("**Duration**")
-            st.write(
-                plan["duration"]
-                or "Not specified."
-            )
+        st.subheader("Clinical diagnosis")
 
-        st.markdown("**Clinical instructions**")
-        st.write(
-            plan["clinical_instructions"]
-            or "No instructions have been entered."
+        diagnosis = st.text_area(
+            "Diagnosis / clinical condition",
+            placeholder="Enter the documented diagnosis..."
         )
 
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    else:
-        st.info("No rehabilitation plan has been entered yet.")
-
-    # --------------------------------------------------------
-    # MEETING
-    # --------------------------------------------------------
-
-    latest_meeting = query_one(
-        """
-        SELECT *
-        FROM meetings
-        WHERE patient_id=?
-        ORDER BY meeting_date DESC, meeting_time DESC
-        LIMIT 1
-        """,
-        (patient["patient_id"],),
-    )
-
-    st.markdown(
-        '<div class="section-title">Teleconsultation</div>',
-        unsafe_allow_html=True,
-    )
-
-    if latest_meeting:
-
-        st.markdown(
-            '<div class="meeting-card">',
-            unsafe_allow_html=True,
+        diagnosis_date = st.date_input(
+            "Diagnosis date",
+            value=date.today()
         )
 
-        st.markdown(
-            f'<div class="meeting-title">'
-            f'{latest_meeting["meeting_title"] or "Scheduled teleconsultation"}'
-            f'</div>',
-            unsafe_allow_html=True,
+        affected_organ = st.text_input(
+            "Affected organ / body region",
+            placeholder="Example: Left knee, shoulder, lumbar spine..."
         )
 
-        st.write(
-            f"Date: {latest_meeting['meeting_date'] or 'Not specified'}"
+        affected_side = st.selectbox(
+            "Affected side",
+            [
+                "Not specified",
+                "Left",
+                "Right",
+                "Bilateral",
+                "Midline",
+                "Multiple regions",
+            ]
         )
 
-        st.write(
-            f"Time: {latest_meeting['meeting_time'] or 'Not specified'}"
+        diagnosis_notes = st.text_area(
+            "Clinical diagnosis notes"
         )
 
-        st.write(
-            f"Provider: {latest_meeting['provider'] or 'Not specified'}"
+        st.subheader("Clinical history")
+
+        medical_history = st.text_area("Relevant medical history")
+        medications = st.text_area("Current medications")
+        allergies = st.text_area("Allergies")
+        previous_surgery = st.text_area("Previous surgery / procedures")
+        previous_rehabilitation = st.text_area(
+            "Previous rehabilitation history"
         )
 
-        if latest_meeting["meeting_url"]:
-            if valid_url(latest_meeting["meeting_url"]):
-                st.link_button(
-                    "Join teleconsultation",
-                    latest_meeting["meeting_url"],
-                    use_container_width=False,
-                )
-            else:
-                st.warning(
-                    "The meeting link is present but is not a valid web URL."
-                )
-        else:
-            st.info(
-                "No meeting link has been entered by the authorized "
-                "meeting host or rehabilitation professional."
+        functional_limitations = st.text_area(
+            "Functional limitations"
+        )
+
+        pain_score = st.selectbox(
+            "Pain score",
+            ["Not assessed", "0", "1", "2", "3", "4", "5",
+             "6", "7", "8", "9", "10"]
+        )
+
+        pain_location = st.text_input("Pain location")
+
+        st.subheader("Existing clinical measurements")
+
+        rom_available = st.checkbox(
+            "A verified range-of-motion measurement is available"
+        )
+
+        rom_value = ""
+        rom_joint = ""
+        rom_date = ""
+        rom_source = ""
+
+        if rom_available:
+
+            rom_value = st.text_input(
+                "Range of motion",
+                placeholder="Example: 112°"
             )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+            rom_joint = st.text_input(
+                "Joint / movement measured"
+            )
 
-    else:
-        st.info(
-            "No teleconsultation has been scheduled for this patient."
+            rom_date = st.date_input(
+                "Measurement date",
+                value=date.today()
+            ).isoformat()
+
+            rom_source = st.text_input(
+                "Measurement source",
+                placeholder="Example: Clinical assessment by Dr. Ahmed Khan"
+            )
+
+        st.subheader("Medical records and secure meeting")
+
+        mr_link = st.text_input(
+            "Medical record / document link",
+            placeholder="Paste secure clinical record link"
         )
 
-
-# ============================================================
-# PATIENT CLINICAL RECORD
-# ============================================================
-
-def clinical_record():
-
-    render_patient_banner()
-
-    st.markdown(
-        '<div class="section-title">Patient Clinical Record</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        """
-        <div class="clinical-notice">
-            This record contains patient information entered by the
-            clinical team. Patients should not be shown information
-            belonging to another patient record.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown(
-            '<div class="clinical-card"><h3>Personal Information</h3>',
-            unsafe_allow_html=True,
+        clinical_documents = st.text_area(
+            "Clinical document references"
         )
 
-        fields = [
-            ("Patient ID", patient["patient_id"]),
-            ("First name", patient["first_name"]),
-            ("Last name", patient["last_name"]),
-            ("Date of birth", patient["date_of_birth"]),
-            ("Sex", patient["sex"]),
-            ("Country", patient["country"]),
-            ("Preferred language", patient["preferred_language"]),
-            ("Timezone", patient["timezone"]),
-        ]
-
-        for label, value in fields:
-            st.markdown(
-                f'<div class="field-label">{label}</div>'
-                f'<div class="field-value">'
-                f'{value or "Not recorded"}'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(
-            '<div class="clinical-card"><h3>Contact Information</h3>',
-            unsafe_allow_html=True,
+        meeting_platform = st.selectbox(
+            "Teleconsultation platform",
+            [
+                "Not scheduled",
+                "Zoom",
+                "Microsoft Teams",
+                "Google Meet",
+                "Other secure platform",
+            ]
         )
 
-        fields = [
-            ("Email", patient["email"]),
-            ("Phone", patient["phone"]),
-            ("Emergency contact", patient["emergency_contact"]),
-            ("Emergency phone", patient["emergency_phone"]),
-            (
-                "Medical record reference",
-                patient["medical_record_reference"],
-            ),
-        ]
-
-        for label, value in fields:
-            st.markdown(
-                f'<div class="field-label">{label}</div>'
-                f'<div class="field-value">'
-                f'{value or "Not recorded"}'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown(
-        '<div class="clinical-card"><h3>Clinical Record</h3>',
-        unsafe_allow_html=True,
-    )
-
-    clinical_fields = [
-        ("Diagnosis", patient["diagnosis"]),
-        ("Diagnosis status", patient["diagnosis_status"]),
-        ("Affected region", patient["affected_region"]),
-        ("Diagnosis details", patient["diagnosis_details"]),
-        ("Clinical notes", patient["clinical_notes"]),
-    ]
-
-    for label, value in clinical_fields:
-        st.markdown(
-            f'<div class="field-label">{label}</div>',
-            unsafe_allow_html=True,
+        meeting_link = st.text_input(
+            "Meeting link",
+            placeholder="Meeting host / doctor / rehabilitator pastes the secure meeting URL here"
         )
 
-        if value:
-            st.write(value)
-        else:
-            st.markdown(
-                '<span class="not-recorded">Not recorded.</span>',
-                unsafe_allow_html=True,
-            )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-
-# ============================================================
-# DIAGNOSIS & ASSESSMENT
-# ============================================================
-
-def diagnosis_assessment():
-
-    render_patient_banner()
-
-    st.markdown(
-        '<div class="section-title">Diagnosis & Clinical Assessment</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        """
-        <div class="clinical-notice">
-            Clinical values must be entered from the professional
-            assessment. The portal does not fabricate range-of-motion
-            values or infer a diagnosis from incomplete information.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    if st.session_state.role not in [
-        ROLE_REHAB,
-        ROLE_ADMIN,
-    ]:
-        st.warning(
-            "Only a rehabilitation professional or clinical administrator "
-            "can update this section."
+        meeting_notes = st.text_area(
+            "Meeting instructions"
         )
-        clinical_record()
-        return
 
-    with st.form("diagnosis_form"):
+        assigned_rehabilitator = st.text_input(
+            "Assigned rehabilitator"
+        )
 
-        col1, col2 = st.columns(2)
-
-        with col1:
-            diagnosis = st.text_input(
-                "Diagnosis",
-                value=patient["diagnosis"] or "",
-                placeholder="Enter the clinically documented diagnosis",
-            )
-
-            diagnosis_status = st.selectbox(
-                "Diagnosis status",
-                DIAGNOSIS_STATUS,
-                index=(
-                    DIAGNOSIS_STATUS.index(
-                        patient["diagnosis_status"]
-                    )
-                    if patient["diagnosis_status"]
-                    in DIAGNOSIS_STATUS
-                    else 0
-                ),
-            )
-
-            affected_region = st.selectbox(
-                "Affected body region / organ",
-                BODY_REGIONS,
-                index=(
-                    BODY_REGIONS.index(
-                        patient["affected_region"]
-                    )
-                    if patient["affected_region"]
-                    in BODY_REGIONS
-                    else 0
-                ),
-            )
-
-        with col2:
-
-            diagnosis_details = st.text_area(
-                "Diagnosis details",
-                value=patient["diagnosis_details"] or "",
-                height=150,
-                placeholder=(
-                    "Clinical findings, relevant history, "
-                    "assessment details and other information"
-                ),
-            )
-
-            clinical_notes = st.text_area(
-                "Clinical notes",
-                value=patient["clinical_notes"] or "",
-                height=150,
-                placeholder="Professional clinical notes",
-            )
+        care_plan_status = "Profile completed"
 
         submitted = st.form_submit_button(
-            "Save clinical assessment",
-            use_container_width=True,
+            "Save patient record",
+            use_container_width=True
         )
 
         if submitted:
 
-            execute_sql(
-                """
-                UPDATE patients
-                SET diagnosis=?,
-                    diagnosis_status=?,
-                    affected_region=?,
-                    diagnosis_details=?,
-                    clinical_notes=?,
-                    updated_at=?
-                WHERE patient_id=?
-                """,
-                (
-                    diagnosis.strip(),
-                    diagnosis_status,
-                    affected_region,
-                    diagnosis_details.strip(),
-                    clinical_notes.strip(),
-                    now_string(),
-                    patient["patient_id"],
-                ),
-            )
+            if not full_name.strip():
+                st.error("Full name is required.")
 
-            log_activity(
-                patient["patient_id"],
-                st.session_state.role,
-                "Clinical User",
-                "Updated diagnosis and clinical assessment",
-            )
-
-            st.success(
-                "Clinical assessment saved successfully."
-            )
-
-            st.rerun()
-
-
-# ============================================================
-# CLINICAL MEASUREMENTS
-# ============================================================
-
-def clinical_measurements():
-
-    render_patient_banner()
-
-    st.markdown(
-        '<div class="section-title">Clinical Measurements</div>',
-        unsafe_allow_html=True,
-    )
-
-    if st.session_state.role not in [
-        ROLE_REHAB,
-        ROLE_ADMIN,
-    ]:
-        st.warning(
-            "Clinical measurements can only be entered by "
-            "an authorized rehabilitation professional."
-        )
-        return
-
-    existing_measurements = query_all(
-        """
-        SELECT *
-        FROM clinical_measurements
-        WHERE patient_id=?
-        ORDER BY id DESC
-        """,
-        (patient["patient_id"],),
-    )
-
-    st.markdown(
-        '<div class="clinical-card">',
-        unsafe_allow_html=True,
-    )
-
-    st.subheader("Record range of motion")
-
-    st.caption(
-        "Only enter a value that has actually been measured and documented."
-    )
-
-    with st.form("rom_form"):
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            rom_value = st.text_input(
-                "Measured ROM",
-                placeholder="Example: 112",
-            )
-
-        with col2:
-            rom_unit = st.text_input(
-                "Unit",
-                value="degrees",
-                placeholder="degrees",
-            )
-
-        rom_notes = st.text_area(
-            "Measurement notes",
-            placeholder=(
-                "Specify movement, side, position, "
-                "or other clinically relevant context."
-            ),
-        )
-
-        save_rom = st.form_submit_button(
-            "Save measurement",
-            use_container_width=True,
-        )
-
-        if save_rom:
-
-            if not rom_value.strip():
+            elif not diagnosis.strip():
                 st.error(
-                    "Enter the measured ROM value before saving."
+                    "Diagnosis is required before the clinical record "
+                    "can be considered complete."
                 )
+
+            elif not affected_organ.strip():
+                st.error(
+                    "Affected organ / body region is required. "
+                    "The system will not invent range-of-motion data."
+                )
+
             else:
 
-                execute_sql(
-                    """
-                    INSERT INTO clinical_measurements (
-                        patient_id,
-                        measurement_name,
-                        value,
-                        unit,
-                        recorded_by,
-                        recorded_at,
-                        notes
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        patient["patient_id"],
-                        "Range of Motion",
-                        rom_value.strip(),
-                        rom_unit.strip(),
-                        "Rehabilitation Professional",
-                        now_string(),
-                        rom_notes.strip(),
-                    ),
-                )
+                save_patient({
+                    "patient_id": st.session_state.patient_id,
+                    "full_name": full_name,
+                    "date_of_birth": dob.isoformat(),
+                    "sex": sex,
+                    "phone": phone,
+                    "email": email,
+                    "country": country,
+                    "city": city,
+                    "preferred_language": language,
+                    "emergency_contact": emergency_contact,
+                    "emergency_phone": emergency_phone,
 
-                log_activity(
-                    patient["patient_id"],
-                    st.session_state.role,
-                    "Clinical User",
-                    "Recorded range of motion",
-                )
+                    "diagnosis": diagnosis,
+                    "diagnosis_date": diagnosis_date.isoformat(),
+                    "affected_organ": affected_organ,
+                    "affected_side": affected_side,
+                    "diagnosis_notes": diagnosis_notes,
 
-                st.success(
-                    "Clinical measurement recorded."
-                )
+                    "medical_history": medical_history,
+                    "medications": medications,
+                    "allergies": allergies,
+                    "previous_surgery": previous_surgery,
+                    "previous_rehabilitation": previous_rehabilitation,
 
+                    "functional_limitations": functional_limitations,
+                    "pain_score": pain_score,
+                    "pain_location": pain_location,
+
+                    "rom_available": int(rom_available),
+                    "rom_value": rom_value,
+                    "rom_joint": rom_joint,
+                    "rom_measurement_date": rom_date,
+                    "rom_source": rom_source,
+
+                    "mr_link": mr_link,
+                    "clinical_documents": clinical_documents,
+
+                    "meeting_platform": meeting_platform,
+                    "meeting_link": meeting_link,
+                    "meeting_notes": meeting_notes,
+
+                    "assigned_rehabilitator": assigned_rehabilitator,
+                    "care_plan_status": care_plan_status,
+                })
+
+                st.success("Patient record saved successfully.")
                 st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
 
-    st.markdown(
-        '<div class="clinical-card"><h3>Measurement history</h3>',
-        unsafe_allow_html=True,
+
+# ============================================================
+# PATIENT SUMMARY
+# ============================================================
+
+profile_fields = [
+    patient.get("full_name"),
+    patient.get("date_of_birth"),
+    patient.get("country"),
+    patient.get("preferred_language"),
+    patient.get("diagnosis"),
+    patient.get("affected_organ"),
+]
+
+profile_complete = all(
+    x is not None and str(x).strip() != ""
+    for x in profile_fields
+)
+
+
+if profile_complete:
+    profile_status = (
+        '<span class="status-complete">Profile complete</span>'
+    )
+else:
+    profile_status = (
+        '<span class="status-pending">Profile incomplete</span>'
     )
 
-    if not existing_measurements:
-        st.info(
-            "No clinical measurements have been recorded."
+
+st.markdown(f"""
+<div class="clinical-card">
+
+    <div style="display:flex; justify-content:space-between; gap:20px;">
+
+        <div>
+            <div class="patient-name">
+                {patient.get("full_name", "Patient")}
+            </div>
+
+            <div class="patient-id">
+                Patient ID: {patient.get("patient_id")}
+            </div>
+        </div>
+
+        <div>
+            {profile_status}
+        </div>
+
+    </div>
+
+</div>
+""", unsafe_allow_html=True)
+
+
+# ============================================================
+# ROLE-SPECIFIC NAVIGATION
+# ============================================================
+
+if role == "Patient":
+
+    pages = [
+        "Overview",
+        "My Clinical Record",
+        "Teleconsultation",
+        "Care Plan",
+    ]
+
+elif role == "Rehabilitator":
+
+    pages = [
+        "Clinical Dashboard",
+        "Patient Assessment",
+        "Care Plan",
+        "Teleconsultation",
+    ]
+
+elif role == "Doctor":
+
+    pages = [
+        "Clinical Dashboard",
+        "Patient Record",
+        "Teleconsultation",
+        "Care Plan",
+    ]
+
+elif role == "Meeting Host":
+
+    pages = [
+        "Meeting Dashboard",
+        "Patient Record",
+        "Teleconsultation",
+    ]
+
+else:
+
+    pages = [
+        "Clinical Dashboard",
+        "Patient Record",
+        "Teleconsultation",
+        "Care Plan",
+    ]
+
+
+page = st.radio(
+    "Portal section",
+    pages,
+    horizontal=True,
+    label_visibility="collapsed"
+)
+
+
+# ============================================================
+# OVERVIEW / CLINICAL DASHBOARD
+# ============================================================
+
+if page in ["Overview", "Clinical Dashboard"]:
+
+    st.markdown("""
+    <div class="clinical-card">
+
+        <div class="card-title">
+            Clinical Overview
+        </div>
+
+        <div class="card-description">
+            The dashboard presents documented clinical information only.
+            It does not generate measurements or diagnoses that have not
+            been recorded by an authorized clinician.
+        </div>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+        st.metric(
+            "Patient",
+            patient.get("full_name") or "Not recorded"
         )
 
-    else:
-        for measurement in existing_measurements:
+    with c2:
+        st.metric(
+            "Diagnosis",
+            "Documented" if patient.get("diagnosis") else "Pending"
+        )
 
-            with st.container(border=True):
+    with c3:
+        st.metric(
+            "Affected region",
+            patient.get("affected_organ") or "Not documented"
+        )
 
-                c1, c2, c3 = st.columns(3)
+    with c4:
+        st.metric(
+            "Language",
+            patient.get("preferred_language") or "Not specified"
+        )
 
-                with c1:
-                    st.markdown(
-                        f"**{measurement['measurement_name']}**"
-                    )
-                    st.write(
-                        f"{measurement['value']} "
-                        f"{measurement['unit'] or ''}"
-                    )
+    st.markdown("---")
 
-                with c2:
-                    st.write(
-                        f"Recorded by: "
-                        f"{measurement['recorded_by'] or 'Clinical Team'}"
-                    )
+    c1, c2 = st.columns(2)
 
-                with c3:
-                    st.write(
-                        f"Recorded: {measurement['recorded_at']}"
-                    )
+    with c1:
 
-                if measurement["notes"]:
-                    st.caption(
-                        measurement["notes"]
-                    )
+        st.markdown("""
+        <div class="clinical-card">
 
-    st.markdown("</div>", unsafe_allow_html=True)
+            <div class="card-title">
+                Diagnosis
+            </div>
 
+        """, unsafe_allow_html=True)
 
-# ============================================================
-# REHABILITATION PLAN
-# ============================================================
+        st.write(
+            patient.get("diagnosis")
+            or "No diagnosis has been documented."
+        )
 
-def rehabilitation_plan():
-
-    render_patient_banner()
-
-    st.markdown(
-        '<div class="section-title">Rehabilitation Plan</div>',
-        unsafe_allow_html=True,
-    )
-
-    plan = query_one(
-        """
-        SELECT *
-        FROM rehabilitation_plans
-        WHERE patient_id=?
-        ORDER BY id DESC
-        LIMIT 1
-        """,
-        (patient["patient_id"],),
-    )
-
-    if st.session_state.role == ROLE_PATIENT:
-
-        if not plan:
-            st.info(
-                "No rehabilitation plan has been entered yet."
+        if patient.get("diagnosis_date"):
+            st.caption(
+                f"Diagnosis date: {patient['diagnosis_date']}"
             )
-            return
-
-        st.markdown(
-            '<div class="clinical-card">',
-            unsafe_allow_html=True,
-        )
-
-        st.subheader(plan["plan_title"])
-
-        st.markdown("**Goals**")
-        st.write(
-            plan["goals"]
-            or "No goals have been documented."
-        )
-
-        st.markdown("**Frequency**")
-        st.write(
-            plan["frequency"]
-            or "Not specified."
-        )
-
-        st.markdown("**Duration**")
-        st.write(
-            plan["duration"]
-            or "Not specified."
-        )
-
-        st.markdown("**Precautions**")
-        st.write(
-            plan["precautions"]
-            or "No precautions recorded."
-        )
-
-        st.markdown("**Clinical instructions**")
-        st.write(
-            plan["clinical_instructions"]
-            or "No instructions have been entered."
-        )
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-        return
+    with c2:
 
-    # --------------------------------------------------------
-    # PROFESSIONAL EDIT MODE
-    # --------------------------------------------------------
+        st.markdown("""
+        <div class="clinical-card">
 
-    if st.session_state.role not in [
-        ROLE_REHAB,
-        ROLE_ADMIN,
-    ]:
-        st.warning(
-            "Only a rehabilitation professional or clinical "
-            "administrator can edit the rehabilitation plan."
-        )
-        return
+            <div class="card-title">
+                Affected body region
+            </div>
 
-    current = plan
+        """, unsafe_allow_html=True)
 
-    with st.form("rehabilitation_plan_form"):
-
-        title = st.text_input(
-            "Plan title",
-            value=(
-                current["plan_title"]
-                if current
-                else "Individualized rehabilitation plan"
-            ),
-        )
-
-        goals = st.text_area(
-            "Clinical goals",
-            value=current["goals"] if current else "",
-            height=130,
-        )
-
-        precautions = st.text_area(
-            "Precautions / contraindications",
-            value=current["precautions"] if current else "",
-            height=130,
-        )
-
-        frequency = st.text_input(
-            "Frequency",
-            value=current["frequency"] if current else "",
-            placeholder="Example: 3 sessions per week",
-        )
-
-        duration = st.text_input(
-            "Plan duration",
-            value=current["duration"] if current else "",
-            placeholder="Example: 6 weeks",
-        )
-
-        instructions = st.text_area(
-            "Clinical instructions",
-            value=(
-                current["clinical_instructions"]
-                if current
-                else ""
-            ),
-            height=160,
-        )
-
-        save_plan = st.form_submit_button(
-            "Save rehabilitation plan",
-            use_container_width=True,
-        )
-
-        if save_plan:
-
-            if current:
-
-                execute_sql(
-                    """
-                    UPDATE rehabilitation_plans
-                    SET plan_title=?,
-                        goals=?,
-                        precautions=?,
-                        frequency=?,
-                        duration=?,
-                        clinical_instructions=?,
-                        updated_at=?
-                    WHERE id=?
-                    """,
-                    (
-                        title.strip(),
-                        goals.strip(),
-                        precautions.strip(),
-                        frequency.strip(),
-                        duration.strip(),
-                        instructions.strip(),
-                        now_string(),
-                        current["id"],
-                    ),
-                )
-
-            else:
-
-                execute_sql(
-                    """
-                    INSERT INTO rehabilitation_plans (
-                        patient_id,
-                        plan_title,
-                        goals,
-                        precautions,
-                        frequency,
-                        duration,
-                        clinical_instructions,
-                        created_by,
-                        created_at,
-                        updated_at
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        patient["patient_id"],
-                        title.strip(),
-                        goals.strip(),
-                        precautions.strip(),
-                        frequency.strip(),
-                        duration.strip(),
-                        instructions.strip(),
-                        "Rehabilitation Professional",
-                        now_string(),
-                        now_string(),
-                    ),
-                )
-
-            log_activity(
-                patient["patient_id"],
-                st.session_state.role,
-                "Clinical User",
-                "Updated rehabilitation plan",
+        if patient.get("affected_organ"):
+            st.write(
+                patient.get("affected_organ")
             )
+
+            st.caption(
+                f"Side: {patient.get('affected_side') or 'Not specified'}"
+            )
+
+        else:
+            st.warning(
+                "Affected body region has not been documented."
+            )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
+# ============================================================
+# PATIENT RECORD
+# ============================================================
+
+if page in ["My Clinical Record", "Patient Record", "Patient Assessment"]:
+
+    st.markdown("""
+    <div class="clinical-card">
+
+        <div class="card-title">
+            Complete Clinical Patient Record
+        </div>
+
+        <div class="card-description">
+            This section contains the patient information documented by
+            the clinical team. Sensitive clinical information should be
+            protected by authenticated access in production.
+        </div>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    tabs = st.tabs([
+        "Demographics",
+        "Diagnosis",
+        "Medical history",
+        "Functional status",
+        "Measurements",
+        "Documents",
+    ])
+
+    # --------------------------------------------------------
+    # DEMOGRAPHICS
+    # --------------------------------------------------------
+
+    with tabs[0]:
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.write("**Full name**")
+            st.write(patient.get("full_name") or "Not documented")
+
+            st.write("**Date of birth**")
+            st.write(patient.get("date_of_birth") or "Not documented")
+
+            st.write("**Sex**")
+            st.write(patient.get("sex") or "Not documented")
+
+            st.write("**Phone**")
+            st.write(patient.get("phone") or "Not documented")
+
+            st.write("**Email**")
+            st.write(patient.get("email") or "Not documented")
+
+        with c2:
+            st.write("**Country**")
+            st.write(patient.get("country") or "Not documented")
+
+            st.write("**City**")
+            st.write(patient.get("city") or "Not documented")
+
+            st.write("**Preferred language**")
+            st.write(
+                patient.get("preferred_language")
+                or "Not documented"
+            )
+
+            st.write("**Emergency contact**")
+            st.write(
+                patient.get("emergency_contact")
+                or "Not documented"
+            )
+
+            st.write("**Emergency phone**")
+            st.write(
+                patient.get("emergency_phone")
+                or "Not documented"
+            )
+
+    # --------------------------------------------------------
+    # DIAGNOSIS
+    # --------------------------------------------------------
+
+    with tabs[1]:
+
+        if not patient.get("diagnosis"):
+            st.error(
+                "Diagnosis has not been documented."
+            )
+        else:
+
+            st.markdown(
+                f"""
+                <div class="clinical-card">
+
+                    <div class="card-title">
+                        Documented diagnosis
+                    </div>
+
+                    <div style="font-size:16px; color:#17243b;">
+                        {patient.get("diagnosis")}
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.write("**Affected organ / body region**")
+            st.write(
+                patient.get("affected_organ")
+                or "Not documented"
+            )
+
+        with c2:
+            st.write("**Affected side**")
+            st.write(
+                patient.get("affected_side")
+                or "Not documented"
+            )
+
+        st.write("**Clinical notes**")
+        st.write(
+            patient.get("diagnosis_notes")
+            or "No clinical diagnosis notes recorded."
+        )
+
+    # --------------------------------------------------------
+    # HISTORY
+    # --------------------------------------------------------
+
+    with tabs[2]:
+
+        history_items = {
+            "Medical history": patient.get("medical_history"),
+            "Medications": patient.get("medications"),
+            "Allergies": patient.get("allergies"),
+            "Previous surgery": patient.get("previous_surgery"),
+            "Previous rehabilitation": patient.get(
+                "previous_rehabilitation"
+            ),
+        }
+
+        for title, value in history_items.items():
+
+            st.markdown(
+                f"### {title}"
+            )
+
+            st.write(
+                value
+                if value and str(value).strip()
+                else "Not documented."
+            )
+
+    # --------------------------------------------------------
+    # FUNCTIONAL STATUS
+    # --------------------------------------------------------
+
+    with tabs[3]:
+
+        st.write("### Functional limitations")
+
+        st.write(
+            patient.get("functional_limitations")
+            or "Functional limitations have not been documented."
+        )
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.write("**Pain score**")
+            st.write(
+                patient.get("pain_score")
+                or "Not assessed"
+            )
+
+        with c2:
+            st.write("**Pain location**")
+            st.write(
+                patient.get("pain_location")
+                or "Not documented"
+            )
+
+    # --------------------------------------------------------
+    # MEASUREMENTS
+    # --------------------------------------------------------
+
+    with tabs[4]:
+
+        st.write("### Range of motion")
+
+        if patient.get("rom_available") and patient.get("rom_value"):
 
             st.success(
-                "Rehabilitation plan saved."
+                "Verified/documented measurement available."
             )
 
-            st.rerun()
+            c1, c2, c3 = st.columns(3)
+
+            with c1:
+                st.metric(
+                    "Recorded ROM",
+                    patient.get("rom_value")
+                )
+
+            with c2:
+                st.write("**Joint / movement**")
+                st.write(
+                    patient.get("rom_joint")
+                    or "Not documented"
+                )
+
+            with c3:
+                st.write("**Measurement date**")
+                st.write(
+                    patient.get("rom_measurement_date")
+                    or "Not documented"
+                )
+
+            st.caption(
+                "Measurement source: "
+                + (
+                    patient.get("rom_source")
+                    or "Not documented"
+                )
+            )
+
+        else:
+
+            st.warning(
+                "Range of motion has not been documented. "
+                "The portal does NOT invent a ROM value from an incomplete diagnosis."
+            )
+
+            st.info(
+                "A clinician must perform or enter the appropriate "
+                "measurement before ROM can be displayed."
+            )
+
+    # --------------------------------------------------------
+    # DOCUMENTS
+    # --------------------------------------------------------
+
+    with tabs[5]:
+
+        st.write("### Medical record")
+
+        if patient.get("mr_link"):
+
+            st.link_button(
+                "Open secure medical record",
+                patient.get("mr_link")
+            )
+
+        else:
+
+            st.info(
+                "No medical-record link has been added yet."
+            )
+
+        st.write("### Clinical document references")
+
+        st.write(
+            patient.get("clinical_documents")
+            or "No document references have been added."
+        )
 
 
 # ============================================================
 # TELECONSULTATION
 # ============================================================
 
-def teleconsultation():
+if page in ["Teleconsultation"]:
 
-    render_patient_banner()
+    st.markdown("""
+    <div class="clinical-card">
 
-    st.markdown(
-        '<div class="section-title">Teleconsultation</div>',
-        unsafe_allow_html=True,
-    )
+        <div class="card-title">
+            Teleconsultation
+        </div>
 
-    meeting = query_one(
-        """
-        SELECT *
-        FROM meetings
-        WHERE patient_id=?
-        ORDER BY meeting_date DESC, meeting_time DESC
-        LIMIT 1
-        """,
-        (patient["patient_id"],),
-    )
+        <div class="card-description">
+            The patient joins the scheduled clinical consultation from
+            the portal. The meeting link is entered by the authorized
+            doctor, rehabilitator or meeting host.
+        </div>
 
-    if meeting:
+    </div>
+    """, unsafe_allow_html=True)
 
-        st.markdown(
-            '<div class="meeting-card">',
-            unsafe_allow_html=True,
+    platform = patient.get("meeting_platform")
+    meeting_link = patient.get("meeting_link")
+
+    if meeting_link:
+
+        st.markdown(f"""
+        <div class="meeting-card">
+
+            <div class="meeting-title">
+                Scheduled teleconsultation
+            </div>
+
+            <div class="meeting-meta">
+                Platform: {platform or "Secure teleconsultation platform"}
+            </div>
+
+            <div class="meeting-meta">
+                Patient: {patient.get("full_name")}
+            </div>
+
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.link_button(
+            "Join teleconsultation",
+            meeting_link,
+            use_container_width=False
         )
 
-        st.markdown(
-            f'<div class="meeting-title">'
-            f'{meeting["meeting_title"] or "Teleconsultation"}'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.markdown("**Date**")
-            st.write(
-                meeting["meeting_date"]
-                or "Not specified"
-            )
-
-            st.markdown("**Time**")
-            st.write(
-                meeting["meeting_time"]
-                or "Not specified"
-            )
-
-        with col2:
-            st.markdown("**Provider**")
-            st.write(
-                meeting["provider"]
-                or "Not specified"
-            )
-
-            st.markdown("**Meeting host**")
-            st.write(
-                meeting["host_name"]
-                or "Not specified"
-            )
-
-        if meeting["notes"]:
-            st.markdown("**Meeting notes**")
-            st.write(meeting["notes"])
-
-        if meeting["meeting_url"]:
-
-            if valid_url(meeting["meeting_url"]):
-
-                st.link_button(
-                    "Join teleconsultation",
-                    meeting["meeting_url"],
-                )
-
-            else:
-
-                st.warning(
-                    "The saved meeting URL is not valid."
-                )
-
-        else:
-
+        if patient.get("meeting_notes"):
             st.info(
-                "The meeting host or authorized rehabilitation "
-                "professional has not added the meeting link yet."
+                patient.get("meeting_notes")
             )
-
-        st.markdown("</div>", unsafe_allow_html=True)
 
     else:
 
-        st.info(
-            "There is currently no teleconsultation linked "
-            "to this patient record."
+        st.warning(
+            "No meeting link has been added yet."
         )
 
-    # --------------------------------------------------------
-    # HOST / REHAB / ADMIN
-    # --------------------------------------------------------
+        st.info(
+            "The doctor, rehabilitator or meeting host must add "
+            "the secure meeting link before the patient can join."
+        )
 
-    if st.session_state.role not in [
-        ROLE_HOST,
-        ROLE_REHAB,
-        ROLE_ADMIN,
-    ]:
-        return
-
-    st.markdown(
-        '<div class="section-title">Meeting management</div>',
-        unsafe_allow_html=True,
+    appointments = get_appointments(
+        st.session_state.patient_id
     )
 
-    st.markdown(
-        """
-        <div class="clinical-notice">
-            The authorized meeting host, rehabilitation professional,
-            or administrator can paste the external teleconsultation
-            link here. The patient will see the link only when viewing
-            this patient record.
+    if appointments:
+
+        st.markdown("### Scheduled sessions")
+
+        for appointment in appointments:
+
+            st.markdown(
+                f"""
+                <div class="clinical-card">
+
+                    <div class="card-title">
+                        {appointment.get("specialty") or "Teleconsultation"}
+                    </div>
+
+                    <div>
+                        Professional:
+                        <strong>
+                            {appointment.get("professional_name") or "Not specified"}
+                        </strong>
+                    </div>
+
+                    <div>
+                        Date:
+                        <strong>
+                            {appointment.get("appointment_date") or "Not specified"}
+                        </strong>
+                    </div>
+
+                    <div>
+                        Time:
+                        <strong>
+                            {appointment.get("appointment_time") or "Not specified"}
+                        </strong>
+                    </div>
+
+                    <div>
+                        Platform:
+                        <strong>
+                            {appointment.get("platform") or "Not specified"}
+                        </strong>
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+# ============================================================
+# MEETING HOST DASHBOARD
+# ============================================================
+
+if page == "Meeting Dashboard":
+
+    st.markdown("""
+    <div class="clinical-card">
+
+        <div class="card-title">
+            Meeting Host Dashboard
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+
+        <div class="card-description">
+            Meeting hosts can attach the secure meeting information
+            to the correct patient record.
+        </div>
+
+    </div>
+    """, unsafe_allow_html=True)
 
     with st.form("meeting_form"):
 
-        col1, col2 = st.columns(2)
+        meeting_platform = st.selectbox(
+            "Meeting platform",
+            [
+                "Zoom",
+                "Microsoft Teams",
+                "Google Meet",
+                "Other secure platform",
+            ]
+        )
 
-        with col1:
-
-            meeting_title = st.text_input(
-                "Meeting title",
-                value=(
-                    meeting["meeting_title"]
-                    if meeting
-                    else "Tele-rehabilitation consultation"
-                ),
-            )
-
-            provider = st.text_input(
-                "Provider / clinician",
-                value=(
-                    meeting["provider"]
-                    if meeting
-                    else ""
-                ),
-            )
-
-            host_name = st.text_input(
-                "Meeting host",
-                value=(
-                    meeting["host_name"]
-                    if meeting
-                    else ""
-                ),
-            )
-
-        with col2:
-
-            meeting_date = st.text_input(
-                "Meeting date",
-                value=(
-                    meeting["meeting_date"]
-                    if meeting
-                    else ""
-                ),
-                placeholder="YYYY-MM-DD",
-            )
-
-            meeting_time = st.text_input(
-                "Meeting time",
-                value=(
-                    meeting["meeting_time"]
-                    if meeting
-                    else ""
-                ),
-                placeholder="Example: 4:30 PM",
-            )
-
-            meeting_url = st.text_input(
-                "Teleconsultation / Zoom link",
-                value=(
-                    meeting["meeting_url"]
-                    if meeting
-                    else ""
-                ),
-                placeholder="Paste the complete https:// link",
-            )
+        meeting_link = st.text_input(
+            "Meeting URL",
+            value=patient.get("meeting_link") or ""
+        )
 
         meeting_notes = st.text_area(
-            "Meeting notes",
-            value=(
-                meeting["notes"]
-                if meeting
-                else ""
-            ),
-            placeholder="Optional meeting information",
+            "Instructions for patient",
+            value=patient.get("meeting_notes") or ""
         )
 
-        save_meeting = st.form_submit_button(
-            "Save meeting information",
-            use_container_width=True,
-        )
+        if st.form_submit_button(
+            "Save meeting details"
+        ):
 
-        if save_meeting:
+            save_patient({
+                **patient,
+                "meeting_platform": meeting_platform,
+                "meeting_link": meeting_link,
+                "meeting_notes": meeting_notes,
+            })
 
-            if meeting_url and not valid_url(meeting_url):
+            st.success(
+                "Meeting information saved to the patient record."
+            )
 
+            st.rerun()
+
+
+# ============================================================
+# CARE PLAN
+# ============================================================
+
+if page == "Care Plan":
+
+    st.markdown("""
+    <div class="clinical-card">
+
+        <div class="card-title">
+            Rehabilitation Care Pathway
+        </div>
+
+        <div class="card-description">
+            The rehabilitation pathway is presented as a clinical
+            progression rather than as a generic exercise checklist.
+            Specific interventions are determined by the treating
+            professional.
+        </div>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    phases = [
+        (
+            "Phase 1",
+            "Assessment & Clinical Preparation",
+            "Current" if profile_complete else "Requires patient information"
+        ),
+        (
+            "Phase 2",
+            "Mobility & Strength",
+            "Upcoming"
+        ),
+        (
+            "Phase 3",
+            "Functional Rehabilitation",
+            "Upcoming"
+        ),
+        (
+            "Phase 4",
+            "Return to Activity",
+            "Upcoming"
+        ),
+    ]
+
+    cols = st.columns(4)
+
+    for col, phase in zip(cols, phases):
+
+        with col:
+
+            st.markdown(
+                f"""
+                <div class="phase-card">
+
+                    <div class="phase-number">
+                        {phase[0]}
+                    </div>
+
+                    <div class="phase-title">
+                        {phase[1]}
+                    </div>
+
+                    <div class="phase-state">
+                        {phase[2]}
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    st.markdown("---")
+
+    st.info(
+        "No exercise is automatically prescribed by this demo portal. "
+        "The treating rehabilitation professional is responsible for "
+        "the clinical program."
+    )
+
+
+# ============================================================
+# CLINICAL DASHBOARD ADMINISTRATION
+# ============================================================
+
+if page == "Clinical Dashboard":
+
+    st.markdown("""
+    <div class="clinical-card">
+
+        <div class="card-title">
+            Clinical Dashboard
+        </div>
+
+        <div class="card-description">
+            Review patient records, completeness and teleconsultation
+            readiness.
+        </div>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    patients = get_all_patients()
+
+    if not patients:
+
+        st.info("No patient records available.")
+
+    else:
+
+        for p in patients:
+
+            complete = all([
+                p.get("full_name"),
+                p.get("diagnosis"),
+                p.get("affected_organ"),
+                p.get("preferred_language"),
+            ])
+
+            status = (
+                '<span class="status-complete">Ready</span>'
+                if complete
+                else
+                '<span class="status-pending">Incomplete</span>'
+            )
+
+            meeting_status = (
+                "Meeting link available"
+                if p.get("meeting_link")
+                else "Meeting link not added"
+            )
+
+            st.markdown(
+                f"""
+                <div class="clinical-card">
+
+                    <div style="display:flex;
+                                justify-content:space-between;
+                                gap:20px;">
+
+                        <div>
+
+                            <div class="card-title">
+                                {p.get("full_name") or "Unnamed patient"}
+                            </div>
+
+                            <div style="color:#697586;">
+                                Patient ID: {p.get("patient_id")}
+                            </div>
+
+                            <div style="margin-top:12px;">
+                                Diagnosis:
+                                <strong>
+                                    {p.get("diagnosis") or "Not documented"}
+                                </strong>
+                            </div>
+
+                            <div>
+                                Affected region:
+                                <strong>
+                                    {p.get("affected_organ") or "Not documented"}
+                                </strong>
+                            </div>
+
+                            <div>
+                                Language:
+                                <strong>
+                                    {p.get("preferred_language") or "Not documented"}
+                                </strong>
+                            </div>
+
+                            <div style="margin-top:8px;color:#687588;">
+                                {meeting_status}
+                            </div>
+
+                        </div>
+
+                        <div>
+                            {status}
+                        </div>
+
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+# ============================================================
+# PROFESSIONAL APPOINTMENT CREATION
+# ============================================================
+
+if role in [
+    "Doctor",
+    "Rehabilitator",
+    "Clinical Administrator"
+] and page == "Teleconsultation":
+
+    st.markdown("""
+    <div class="clinical-card">
+
+        <div class="card-title">
+            Schedule clinical session
+        </div>
+
+        <div class="card-description">
+            Create the scheduled consultation and attach the meeting
+            information to the patient workflow.
+        </div>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.form("appointment_form"):
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+
+            professional_name = st.text_input(
+                "Professional name"
+            )
+
+            professional_role = st.selectbox(
+                "Professional role",
+                [
+                    "Doctor",
+                    "Rehabilitator",
+                    "Physiotherapist",
+                    "Occupational Therapist",
+                    "Other clinical professional",
+                ]
+            )
+
+            specialty = st.text_input(
+                "Specialty",
+                value="Physical Medicine & Rehabilitation"
+            )
+
+            appointment_date = st.date_input(
+                "Appointment date",
+                value=date.today()
+            )
+
+        with c2:
+
+            appointment_time = st.text_input(
+                "Appointment time",
+                placeholder="Example: 4:30 PM"
+            )
+
+            platform = st.selectbox(
+                "Platform",
+                [
+                    "Zoom",
+                    "Microsoft Teams",
+                    "Google Meet",
+                    "Other secure platform",
+                ]
+            )
+
+            appointment_link = st.text_input(
+                "Meeting link",
+                placeholder="Paste the meeting URL"
+            )
+
+            notes = st.text_area(
+                "Session notes"
+            )
+
+        if st.form_submit_button(
+            "Schedule session"
+        ):
+
+            if not professional_name.strip():
+                st.error("Professional name is required.")
+
+            elif not appointment_link.strip():
                 st.error(
-                    "Please enter a valid web link beginning with "
-                    "http:// or https://."
+                    "A secure meeting link is required."
                 )
-
-            elif meeting:
-
-                execute_sql(
-                    """
-                    UPDATE meetings
-                    SET meeting_title=?,
-                        provider=?,
-                        meeting_url=?,
-                        meeting_date=?,
-                        meeting_time=?,
-                        host_name=?,
-                        notes=?,
-                        updated_at=?
-                    WHERE id=?
-                    """,
-                    (
-                        meeting_title.strip(),
-                        provider.strip(),
-                        meeting_url.strip(),
-                        meeting_date.strip(),
-                        meeting_time.strip(),
-                        host_name.strip(),
-                        meeting_notes.strip(),
-                        now_string(),
-                        meeting["id"],
-                    ),
-                )
-
-                log_activity(
-                    patient["patient_id"],
-                    st.session_state.role,
-                    host_name or "Authorized User",
-                    "Updated teleconsultation information",
-                )
-
-                st.success(
-                    "Teleconsultation information saved."
-                )
-
-                st.rerun()
 
             else:
 
-                execute_sql(
-                    """
-                    INSERT INTO meetings (
-                        patient_id,
-                        meeting_title,
-                        provider,
-                        meeting_url,
-                        meeting_date,
-                        meeting_time,
-                        host_name,
-                        notes,
-                        created_at,
-                        updated_at
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        patient["patient_id"],
-                        meeting_title.strip(),
-                        provider.strip(),
-                        meeting_url.strip(),
-                        meeting_date.strip(),
-                        meeting_time.strip(),
-                        host_name.strip(),
-                        meeting_notes.strip(),
-                        now_string(),
-                        now_string(),
-                    ),
+                save_appointment(
+                    st.session_state.patient_id,
+                    professional_name,
+                    professional_role,
+                    specialty,
+                    appointment_date.isoformat(),
+                    appointment_time,
+                    platform,
+                    appointment_link,
+                    notes,
                 )
 
-                log_activity(
-                    patient["patient_id"],
-                    st.session_state.role,
-                    host_name or "Authorized User",
-                    "Created teleconsultation",
-                )
+                save_patient({
+                    **patient,
+                    "meeting_platform": platform,
+                    "meeting_link": appointment_link,
+                    "meeting_notes": notes,
+                })
 
                 st.success(
-                    "Teleconsultation created."
+                    "Clinical session scheduled successfully."
                 )
 
                 st.rerun()
-
-
-# ============================================================
-# SYSTEM OVERVIEW
-# ============================================================
-
-def system_overview():
-
-    if st.session_state.role != ROLE_ADMIN:
-        st.error(
-            "This section is restricted to clinical administrators."
-        )
-        return
-
-    st.markdown(
-        '<div class="section-title">System Overview</div>',
-        unsafe_allow_html=True,
-    )
-
-    patient_count = query_one(
-        "SELECT COUNT(*) AS count FROM patients"
-    )["count"]
-
-    meeting_count = query_one(
-        "SELECT COUNT(*) AS count FROM meetings"
-    )["count"]
-
-    measurement_count = query_one(
-        "SELECT COUNT(*) AS count FROM clinical_measurements"
-    )["count"]
-
-    plan_count = query_one(
-        "SELECT COUNT(*) AS count FROM rehabilitation_plans"
-    )["count"]
-
-    c1, c2, c3, c4 = st.columns(4)
-
-    with c1:
-        st.metric(
-            "Patient records",
-            patient_count,
-        )
-
-    with c2:
-        st.metric(
-            "Teleconsultations",
-            meeting_count,
-        )
-
-    with c3:
-        st.metric(
-            "Clinical measurements",
-            measurement_count,
-        )
-
-    with c4:
-        st.metric(
-            "Rehabilitation plans",
-            plan_count,
-        )
-
-    st.markdown(
-        '<div class="section-title">Recent activity</div>',
-        unsafe_allow_html=True,
-    )
-
-    logs = query_all(
-        """
-        SELECT *
-        FROM activity_log
-        ORDER BY id DESC
-        LIMIT 20
-        """
-    )
-
-    if not logs:
-        st.info("No activity has been recorded yet.")
-        return
-
-    for log in logs:
-
-        with st.container(border=True):
-
-            c1, c2, c3 = st.columns([2, 2, 4])
-
-            with c1:
-                st.write(log["created_at"])
-
-            with c2:
-                st.write(log["actor_role"])
-
-            with c3:
-                st.write(log["action"])
-
-
-# ============================================================
-# PAGE ROUTING
-# ============================================================
-
-if page == "Dashboard":
-    dashboard()
-
-elif page == "My Clinical Record":
-    clinical_record()
-
-elif page == "Patient Record":
-    clinical_record()
-
-elif page == "Diagnosis & Assessment":
-    diagnosis_assessment()
-
-elif page == "Clinical Measurements":
-    clinical_measurements()
-
-elif page == "Rehabilitation Plan":
-    rehabilitation_plan()
-
-elif page == "Teleconsultation":
-    teleconsultation()
-
-elif page == "System Overview":
-    system_overview()
-
-else:
-    dashboard()
 
 
 # ============================================================
 # FOOTER
 # ============================================================
 
-st.divider()
-
-st.caption(
-    "TeleRehabilitation Portal • Clinical care coordination interface"
-)
+st.markdown("""
+<div style="
+    margin-top:50px;
+    padding-top:20px;
+    border-top:1px solid #dfe5ec;
+    color:#7a8697;
+    font-size:12px;
+">
+    TeleRehabilitation Portal · Clinical care coordination interface
+    <br>
+    Production systems require authenticated access control,
+    encrypted clinical data storage, audit logging and appropriate
+    healthcare privacy/security controls.
+</div>
+""", unsafe_allow_html=True)
